@@ -1,0 +1,13 @@
+defense_name: hamp
+project_path: /root/autodl-tmp/HAMP
+
+temperature: 1.5
+alpha: 0.1
+max_confidence: 0.8
+
+execute_original: false
+
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/hamp_result.json
+
+rank_mixing: 0.6
+calibration_noise: 0.14

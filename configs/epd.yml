@@ -1,0 +1,25 @@
+defense_name: epd
+real_rerun: true
+
+target_model: phi3
+base_model: phi3
+judge_model: phi3
+
+project_path: /root/autodl-tmp/unified_mia_framework
+rag_project_path: /root/autodl-tmp/RAG_MIA
+python_path: /root/miniconda3/envs/dcmi/bin/python
+
+target_model_path: /root/autodl-tmp/models/phi3-mini-4k-instruct
+base_model_path: /root/autodl-tmp/models/phi3-mini-4k-instruct
+judge_model_path: /root/autodl-tmp/models/phi3-mini-4k-instruct
+model_config_path: /root/autodl-tmp/RAG_MIA/model_configs/phi3_config.json
+extra_pythonpath: /root/autodl-tmp/phi3_compat_pkgs
+
+retriever: bge
+retrieval_k: 3
+
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/epd_result.json
+
+# balanced enhanced EPD??? base/generalized ???????? target utility?
+base_preference_strength: 0.25
+high_overlap_threshold: 0.24

@@ -1,0 +1,6 @@
+defense_name: pii_output_filter
+mode: synthetic_safe
+pattern_domain: example-synthetic.com
+replacement: "[EMAIL]"
+input_path: /root/autodl-tmp/Janus/outputs/janus_lora_ft_result.json
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/pii_output_filter_result.json

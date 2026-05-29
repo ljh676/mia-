@@ -1,0 +1,36 @@
+# Neighbour_MIA membership evaluation ??
+project_path: /root/autodl-tmp/Neighbour_MIA
+python_path: /root/miniconda3/envs/dcmi/bin/python
+entry_script: attack.py
+output_dir: ./outputs
+output_file: ./outputs/neighbour_mia_result.json
+output_path: /root/autodl-tmp/Neighbour_MIA/all_scores_membership_eval_100.pkl
+log_path: ./outputs/logs/neighbour_mia.log
+
+# ??????? fine-tuned GPT-2 target model ? 100/100 member/non-member ???
+execute_original: true
+
+proc_id: 0
+model: bert
+dataset: sample
+extra_args:
+  - --attack-model-path
+  - /root/autodl-tmp/Neighbour_MIA/finetuned_gpt2_100
+  - --search-model-path
+  - /root/autodl-tmp/models/bert-base-uncased
+  - --members-file
+  - /root/autodl-tmp/Neighbour_MIA/data/train_members_100.txt
+  - --nonmembers-file
+  - /root/autodl-tmp/Neighbour_MIA/data/test_nonmembers_100.txt
+  - --max-samples
+  - "200"
+  - --max-neighbours
+  - "25"
+  - --mlm-top-k
+  - "40"
+  - --max-length
+  - "128"
+  - --output-file
+  - /root/autodl-tmp/Neighbour_MIA/all_scores_membership_eval_100.pkl
+timeout: 1800
+member_count: 100

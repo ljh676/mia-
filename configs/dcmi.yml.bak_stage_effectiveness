@@ -1,0 +1,24 @@
+# DCMI ??????
+project_path: /root/autodl-tmp/DCMI
+python_path: /root/miniconda3/envs/dcmi/bin/python
+output_dir: ./outputs
+output_file: ./outputs/dcmi_result.json
+
+# DCMI ??? MIA.py ?????? JSON?wrapper ??????
+output_path: /root/autodl-tmp/DCMI/outputs/dcmi_result.json
+original_output_path: /root/autodl-tmp/DCMI/outputs/dcmi_result.json
+log_path: ./outputs/logs/dcmi.log
+
+execute_original: true
+entry_candidates:
+  - MIA.py
+  - attack.py
+  - main.py
+  - train.py
+  - example/run_exp.py
+timeout: 120
+extra_args:
+  - --output-file
+  - /root/autodl-tmp/DCMI/outputs/dcmi_result.json
+  - --plot-file
+  - /root/autodl-tmp/DCMI/outputs/dcmi_score_diff.png

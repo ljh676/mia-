@@ -1,0 +1,42 @@
+# RAG_MIA 真实接入配置
+project_path: /root/autodl-tmp/RAG_MIA
+python_path: /root/miniconda3/envs/dcmi/bin/python
+config_path: /root/autodl-tmp/RAG_MIA/configs/nfcorpus.yml
+entry_script: run_mia.py
+output_dir: ./outputs
+output_file: ./outputs/rag_mia_large_result.json
+output_path:
+log_path: ./outputs/logs/rag_mia_large.log
+
+# 真实启动原论文入口。
+execute_original: true
+
+# 最小化验证配置，避免超大实验。
+use_minimal_config: true
+minimal_config_path: /root/autodl-tmp/unified_mia_framework/outputs/rag_mia_min.yml
+sample_num: 100
+question_num: 10
+top_k: 1
+retrieve_k: 3
+evaluate_attack: true
+timeout: 21600
+
+# 避开 ColBERT 预构建 index，改用可生成 FAISS index 的 retriever。
+retriever: bge
+
+# 避免使用 llama3_70b，后续需要 LLM 时使用项目已有较小配置。
+model_name: phi3
+shadow_model_name: phi3
+
+# 使用已生成的最小 target_docs checkpoint，跳过问题生成/筛选阶段。
+from_ckpt: true
+from_ckpt_attack_data: true
+
+# evaluate_attack=true 时必须重新调用目标 LLM 生成回答。
+from_ckpt_model_responses: true
+
+# Phi3 兼容 transformers 4.40.2 隔离包路径，仅注入 RAG_MIA 子进程。
+extra_pythonpath: /root/autodl-tmp/phi3_compat_pkgs
+
+# ???????????????????
+large_output_path: ./outputs/rag_mia_large_result.json

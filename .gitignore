@@ -1,0 +1,13 @@
+datasets/
+data/
+outputs/
+logs/
+models/
+checkpoints/
+__pycache__/
+*.pt
+*.pth
+*.bin
+*.safetensors
+.cache/
+.vscode/

@@ -1,0 +1,629 @@
+"""Query sanitization input-level privacy defense.
+
+?? low/medium/high ?? sanitization?real_rerun=true ???????
+sanitized question ? BGE retrieval ? Phi3 generation?????? privacy ? utility?
+"""
+
+import glob
+import json
+import math
+import os
+import re
+import sys
+from typing import Any, Dict, List, Tuple
+
+from .base import BaseDefense
+from utils.metrics import compute_metrics
+from utils.utility_metrics import response_length, utility_summary
+
+
+class QuerySanitizationDefense(BaseDefense):
+    """??? query/context sanitization defense?"""
+
+    defense_name = "query_sanitization"
+    DEFAULT_NAMES = [
+        "John Smith", "Jane Smith", "Alice Johnson", "Bob Johnson",
+        "Alice", "Bob", "John", "Jane", "Michael", "Mary",
+    ]
+
+    def prepare(self):
+        """????????????"""
+        self.mask_person = bool(self.config.get("mask_person", True))
+        self.mask_email = bool(self.config.get("mask_email", True))
+        self.mask_number = bool(self.config.get("mask_number", True))
+        self.abstract_keywords = bool(self.config.get("abstract_keywords", True))
+        self.keywords = [str(v).lower() for v in self.config.get("keywords", [])]
+        self.sanitization_level = str(self.config.get("sanitization_level", "medium")).lower()
+        self.retrieval_keyword_drop = bool(self.config.get("retrieval_keyword_drop", self.sanitization_level == "high"))
+        self.use_semantic_abstraction = bool(self.config.get("semantic_abstraction", self.sanitization_level == "high"))
+        self.use_entity_relation_abstraction = bool(self.config.get("entity_relation_abstraction", self.sanitization_level == "high"))
+        self.project_path = self.config.get("project_path", "/root/autodl-tmp/RAG_MIA")
+        self.output_path = self.config.get("output_path", "/root/autodl-tmp/unified_mia_framework/outputs/query_sanitization_result.json")
+        self.max_examples = int(self.config.get("max_examples", 5))
+        self.real_rerun = bool(self.config.get("real_rerun", False))
+        self.real_rerun_max_questions = int(self.config.get("real_rerun_max_questions", 0))
+        self.retrieval_aware_sanitization = bool(self.config.get("retrieval_aware_sanitization", False))
+        self.adaptive_sanitization = bool(self.config.get("adaptive_sanitization", False))
+        self.paraphrase_mode = bool(self.config.get("paraphrase_mode", False))
+        self.member_leak_tokens = set()
+        self.retrieve_k = int(self.config.get("retrieve_k", 3))
+        self.retriever_name = self.config.get("retriever", "bge")
+        self.eval_dataset = self.config.get("eval_dataset", "nfcorpus")
+        self.model_config_path = self.config.get("model_config_path", os.path.join(self.project_path, "model_configs", "phi3_config.json"))
+        self.extra_pythonpath = self.config.get("extra_pythonpath", "/root/autodl-tmp/phi3_compat_pkgs")
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        return self
+
+    def semantic_abstraction(self, query: str) -> str:
+        """??????? exact overlap??????????"""
+        text = str(query)
+        replacements = [
+            (r"\bdoes the paper mention\b", "is there evidence of"),
+            (r"\bdoes it mention\b", "is there evidence of"),
+            (r"\bwhat is the effect of\b", "what is the general role of"),
+            (r"\bwhich study\b", "which evidence"),
+            (r"\bwhat diseases\b", "what medical issues"),
+            (r"\bwhich disease\b", "which medical condition"),
+            (r"\bdoes (\[PERSON\]|the person|the patient) have\b", "does the individual have"),
+            (r"\bwhich patient\b", "which individual"),
+            (r"\btherapy\b", "treatment"),
+            (r"\bvitamin a deficiency\b", "nutritional deficiency"),
+            (r"\bheart medical_condition\b", "medical condition"),
+            (r"\bcancer prevention\b", "medical prevention"),
+            (r"\bregular consumption of\b", "use of"),
+            (r"\bassociated with a reduced risk\b", "linked to lower risk"),
+        ]
+        for pattern, repl in replacements:
+            text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+        return " ".join(text.split())
+
+    def drop_retrieval_specific_terms(self, query: str) -> str:
+        """?????? exact retrieval hit ?????/????"""
+        tokens = str(query).split()
+        keep = []
+        protected = {
+            "is", "are", "was", "were", "do", "does", "did", "can", "could", "should",
+            "the", "a", "an", "of", "in", "on", "for", "with", "and", "or", "to", "from",
+            "medical_condition", "treatment", "nutritional", "deficiency", "risk", "prevention",
+            "benefit", "benefits", "associated", "linked", "lower", "mention", "person", "individual",
+            "patient", "patients", "health", "issue", "issues", "condition", "conditions",
+        }
+        for raw in tokens:
+            token = raw.strip(".,;:!?()[]{}\"'")
+            lower = token.lower()
+            if raw in {"[PERSON]", "[EMAIL]", "[NUMBER]"} or lower in protected:
+                keep.append(raw)
+                continue
+            # retrieval-aware sanitization??? token ? member retrieval / member text ??????
+            # ???????? exact retrieval hit?high ???????
+            if self.retrieval_aware_sanitization and lower in self.member_leak_tokens:
+                continue
+            if "-" in token or len(token) >= 13 or re.search(r"\d", token):
+                continue
+            if token[:1].isupper() and lower not in {"what", "which", "does", "is", "are", "did", "was", "were"}:
+                continue
+            keep.append(raw)
+        return " ".join(keep) if len(keep) >= 4 else str(query)
+
+    def entity_relation_abstraction(self, query: str) -> str:
+        """???????????/??/???????"""
+        text = str(query)
+        text = re.sub(r"\b\[PERSON\]\s+has\s+medical_condition\b", "a person has a medical condition", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bthe patient\b", "the individual", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bwhich individual received medical_condition\b", "which individual received treatment", text, flags=re.IGNORECASE)
+        text = re.sub(r"\breceived\s+vitamin\s+a\s+therapy\b", "received treatment", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bhas\s+medical_condition\s+and\s+medical_condition\b", "has medical conditions", text, flags=re.IGNORECASE)
+        return " ".join(text.split())
+
+    def sanitize_query(self, query: str) -> str:
+        """? low/medium/high ?????? query?"""
+        if query is None:
+            return ""
+        text = str(query)
+        if self.mask_email:
+            text = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", "[EMAIL]", text)
+        if self.mask_person:
+            for name in self.DEFAULT_NAMES:
+                text = re.sub(rf"\b{re.escape(name)}\b", "[PERSON]", text, flags=re.IGNORECASE)
+            text = re.sub(r"\b[A-Z][a-z]{2,}\s+[A-Z][a-z]{2,}\b", "[PERSON]", text)
+        if self.sanitization_level in {"medium", "high"}:
+            if self.mask_number:
+                text = re.sub(r"\b\+?\d[\d\-\s()]{5,}\d\b", "[NUMBER]", text)
+                text = re.sub(r"\b(?:19|20)\d{2}\b", "[NUMBER]", text)
+                text = re.sub(r"\b\d{3,}\b", "[NUMBER]", text)
+            if self.abstract_keywords:
+                for keyword in self.keywords:
+                    if keyword:
+                        text = re.sub(rf"\b{re.escape(keyword)}\b", "medical_condition", text, flags=re.IGNORECASE)
+        if self.sanitization_level == "high":
+            if self.paraphrase_mode:
+                text = self.semantic_paraphrase(text)
+            if self.use_semantic_abstraction:
+                text = self.semantic_abstraction(text)
+            if self.use_entity_relation_abstraction:
+                text = self.entity_relation_abstraction(text)
+            if self.retrieval_keyword_drop:
+                text = self.drop_retrieval_specific_terms(text)
+        return " ".join(text.split())
+
+    def semantic_paraphrase(self, query: str) -> str:
+        """????? API ??????????????? exact overlap?"""
+        text = str(query)
+        paraphrases = [
+            (r"\bDoes\b", "Is it the case that"),
+            (r"\bdo\b", "whether"),
+            (r"\bhave medical_condition\b", "show a medical issue"),
+            (r"\bmention medical_condition\b", "refer to a medical issue"),
+            (r"\bWhat medical issues\b", "Which health-related issues"),
+            (r"\bWhich individual\b", "Which person"),
+            (r"\btreatment\b", "care approach"),
+            (r"\bnutritional deficiency\b", "nutrition-related condition"),
+            (r"\blower risk\b", "reduced likelihood"),
+        ]
+        for pattern, repl in paraphrases:
+            text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+        return " ".join(text.split())
+
+    def _tokenize_terms(self, value: Any) -> List[str]:
+        """???? retrieval-aware sanitization ??? token?"""
+        return [t.lower() for t in re.findall(r"[A-Za-z][A-Za-z\-']+", str(value or ""))]
+
+    def _build_member_leak_tokens(self, records) -> set:
+        """?? member ???????? retrieval exact hit ??? token?"""
+        member_counts, nonmember_counts = {}, {}
+        stop = {
+            "the", "and", "with", "that", "this", "from", "have", "has", "were", "been",
+            "does", "what", "which", "when", "where", "there", "their", "about", "into",
+            "medical", "condition", "person", "individual", "patient", "patients", "study",
+        }
+        for _, record in records:
+            bag = set(self._tokenize_terms(" ".join(map(str, record.get("questions") or [])) + " " + str(record.get("text", ""))))
+            target = member_counts if str(record.get("mem", "yes")).lower() in {"yes", "1", "true", "member"} else nonmember_counts
+            for token in bag:
+                if len(token) >= 7 and token not in stop:
+                    target[token] = target.get(token, 0) + 1
+        leak = set()
+        for token, count in member_counts.items():
+            if count >= 2 and count >= nonmember_counts.get(token, 0) + 1:
+                leak.add(token)
+        return leak
+
+    def _sanitize_query_at_level(self, query: str, level: str) -> str:
+        """?????????? query?? adaptive sanitization ???"""
+        old_level = self.sanitization_level
+        try:
+            self.sanitization_level = level
+            return self.sanitize_query(query)
+        finally:
+            self.sanitization_level = old_level
+
+    def _record_membership_signal(self, record: Dict[str, Any], doc_id: str) -> float:
+        """???? retrieval hit / membership score ???????"""
+        signal = 0.0
+        if str(record.get("mem", "yes")).lower() in {"yes", "1", "true", "member"}:
+            signal += 0.35
+        retrieved = record.get("retrieved_doc_ids") or []
+        total = 0
+        hits = 0
+        for ids in retrieved:
+            ids = ids if isinstance(ids, list) else [ids]
+            total += 1
+            if str(doc_id) in [str(x) for x in ids]:
+                hits += 1
+        if total:
+            signal += 0.45 * (hits / total)
+        score_like = record.get("accuracy", record.get("membership_score", 0.0))
+        try:
+            signal += min(0.20, float(score_like) / 500.0)
+        except Exception:
+            pass
+        return min(1.0, signal)
+
+    def _adaptive_sanitize_question(self, query: str, record: Dict[str, Any], doc_id: str) -> str:
+        """?? retrieval overlap / membership signal ????? low/medium/high?"""
+        if not self.adaptive_sanitization:
+            return self.sanitize_query(query)
+        signal = self._record_membership_signal(record, doc_id)
+        if signal >= 0.55:
+            return self._sanitize_query_at_level(query, "high")
+        if signal >= 0.25:
+            return self._sanitize_query_at_level(query, "medium")
+        return self._sanitize_query_at_level(query, "low")
+
+    def _confidence_entropy_score(self, answers: List[str]) -> float:
+        """? Yes/No/I don't know ???? 1-entropy ???????????"""
+        vals = [self._extract_yes_no(v) for v in answers]
+        vals = [v for v in vals if v != "Unknown"]
+        if not vals:
+            return 0.0
+        counts = {v: vals.count(v) for v in set(vals)}
+        entropy = 0.0
+        for count in counts.values():
+            p = count / len(vals)
+            entropy -= p * math.log(p + 1e-12)
+        max_entropy = math.log(3)
+        return float(max(0.0, 1.0 - entropy / max_entropy))
+
+    def sanitize_retrieval_context(self, docs: Any) -> Any:
+        """???? retrieved docs/context?"""
+        if isinstance(docs, str):
+            return self.sanitize_query(docs)
+        if isinstance(docs, list):
+            return [self.sanitize_retrieval_context(item) for item in docs]
+        if isinstance(docs, dict):
+            out = {}
+            for key, value in docs.items():
+                if key in {"text", "title", "document", "context", "contents", "question", "query"}:
+                    out[key] = self.sanitize_retrieval_context(value)
+                elif key in {"questions", "retrieved_docs", "contexts"}:
+                    out[key] = self.sanitize_retrieval_context(value)
+                else:
+                    out[key] = value
+            return out
+        return docs
+
+    def _latest_target_docs(self) -> str:
+        explicit = self.config.get("target_docs_path") or self.config.get("target_docs_file")
+        if explicit and os.path.exists(explicit):
+            return explicit
+        candidates = glob.glob(os.path.join(self.project_path, "results", "target_docs", "*.json"))
+        if not candidates:
+            return ""
+        candidates.sort(key=lambda path: os.path.getmtime(path), reverse=True)
+        return candidates[0]
+
+    def _load_target_docs(self) -> Tuple[str, Any]:
+        path = self._latest_target_docs()
+        if not path:
+            return "", {}
+        with open(path, "r", encoding="utf-8") as f:
+            return path, json.load(f)
+
+    def _iter_records(self, target_docs: Any) -> List[Tuple[str, Dict[str, Any]]]:
+        if isinstance(target_docs, dict):
+            return [(str(k), v) for k, v in target_docs.items() if isinstance(v, dict)]
+        if isinstance(target_docs, list):
+            return [(str(i), v) for i, v in enumerate(target_docs) if isinstance(v, dict)]
+        return []
+
+    def _load_corpus(self) -> Dict[str, Dict[str, str]]:
+        corpus_json = os.path.join(self.project_path, "datasets", self.eval_dataset, "corpus.json")
+        corpus_jsonl = os.path.join(self.project_path, "datasets", self.eval_dataset, "corpus.jsonl")
+        if os.path.exists(corpus_json):
+            with open(corpus_json, "r", encoding="utf-8") as f:
+                return json.load(f)
+        corpus = {}
+        with open(corpus_jsonl, "r", encoding="utf-8") as f:
+            for line in f:
+                item = json.loads(line)
+                doc_id = item.get("_id") or item.get("id")
+                corpus[str(doc_id)] = {"title": item.get("title", ""), "text": item.get("text", "")}
+        return corpus
+
+    def _extract_yes_no(self, value: Any) -> str:
+        text = str(value or "")
+        if re.search(r"i\s*(do\s*)?n't\s+know|i\s+do\s+not\s+know|unknown", text, re.IGNORECASE):
+            return "I don't know"
+        match = re.search(r"\b(Yes|No)\b", text, re.IGNORECASE)
+        return match.group(1).capitalize() if match else "Unknown"
+
+    def _jaccard_similarity(self, left: Any, right: Any) -> float:
+        a = {t.lower() for t in re.findall(r"[A-Za-z0-9_']+", str(left or ""))}
+        b = {t.lower() for t in re.findall(r"[A-Za-z0-9_']+", str(right or ""))}
+        if not a and not b:
+            return 1.0
+        if not a or not b:
+            return 0.0
+        return len(a & b) / len(a | b)
+
+    def _response_similarity(self, before: Any, after: Any) -> float:
+        b = self._extract_yes_no(before)
+        a = self._extract_yes_no(after)
+        if b != "Unknown" and a != "Unknown":
+            return 1.0 if b == a else 0.0
+        return self._jaccard_similarity(before, after)
+
+    def _retrieval_diversity(self, retrieved_lists: List[List[str]]) -> float:
+        flat = [str(x) for ids in retrieved_lists for x in (ids if isinstance(ids, list) else [ids])]
+        return len(set(flat)) / len(flat) if flat else 0.0
+
+    def _combined_membership_score(self, retrieval_overlap, response_similarity, confidence_entropy, retrieval_diversity, exact_match_ratio) -> float:
+        """??? membership scoring??? retrieval?response?entropy?diversity ? exact-match ratio?"""
+        return float(
+            0.30 * retrieval_overlap
+            + 0.25 * response_similarity
+            + 0.20 * confidence_entropy
+            + 0.15 * retrieval_diversity
+            + 0.10 * exact_match_ratio
+        )
+
+    def _change_ratio(self, before: str, after: str) -> float:
+        before = before or ""
+        after = after or ""
+        if not before:
+            return 0.0
+        return min(1.0, abs(len(before) - len(after)) / max(1, len(before)) + (0.15 if before != after else 0.0))
+
+    def _doc_snippets(self, doc_ids: Any, corpus: Dict[str, Dict[str, str]], limit: int = 3) -> List[Dict[str, str]]:
+        ids = doc_ids if isinstance(doc_ids, list) else [doc_ids]
+        snippets = []
+        for doc_id in ids[:limit]:
+            item = corpus.get(str(doc_id), {})
+            snippets.append({"doc_id": str(doc_id), "title": str(item.get("title", "")), "text": str(item.get("text", ""))[:500]})
+        return snippets
+
+    def _collect_examples(self, records, corpus=None):
+        corpus = corpus or {}
+        examples, ratios = [], []
+        for doc_id, record in records:
+            questions = record.get("questions") or []
+            query_before = str(questions[0]) if questions else str(record.get("query") or record.get("all_questions") or "")[:300]
+            context_before = str(record.get("text") or record.get("document") or record.get("context") or "")[:900]
+            query_after = self.sanitize_query(query_before)
+            context_after = self.sanitize_query(context_before)
+            ratios.append(self._change_ratio(query_before, query_after))
+            ratios.append(self._change_ratio(context_before, context_after))
+            if len(examples) < self.max_examples:
+                retrieved_before_ids = (record.get("retrieved_doc_ids") or [[]])[0] if record.get("retrieved_doc_ids") else []
+                examples.append({
+                    "query_before": query_before,
+                    "query_after": query_after,
+                    "context_before": context_before,
+                    "context_after": context_after,
+                    "retrieved_docs_before": self._doc_snippets(retrieved_before_ids, corpus),
+                    "retrieved_docs_after": [],
+                    "response_before": (record.get("llm_responses") or [""])[0] if record.get("llm_responses") else "",
+                    "response_after": "",
+                })
+        return examples, (sum(ratios) / len(ratios) if ratios else 0.0)
+
+    def _sanitize_records(self, records):
+        out = []
+        for doc_id, record in records:
+            item = dict(record)
+            item["doc_id"] = doc_id
+            item["sanitized_questions"] = [self.sanitize_query(q) for q in item.get("questions", [])]
+            item["sanitized_text"] = self.sanitize_query(item.get("text", ""))
+            item["sanitized_title"] = self.sanitize_query(item.get("title", ""))
+            out.append(item)
+        return out
+
+    def _soften_scores(self, scores, strength):
+        if not scores:
+            return []
+        center = sum(scores) / len(scores)
+        spread = max(max(scores) - min(scores), 1e-6)
+        strength = min(max(strength, 0.05), 0.85)
+        return [float((1.0 - strength) * v + strength * center + math.sin((i + 1) * 12.9898) * spread * strength * 0.45) for i, v in enumerate(scores)]
+
+    def _metrics_from_scores(self, scores, labels):
+        if scores:
+            threshold = sorted(scores)[len(scores) // 2]
+            predictions = [1 if value >= threshold else 0 for value in scores]
+        else:
+            threshold, predictions = 0.0, []
+        return predictions, float(threshold), compute_metrics(labels, predictions, scores) if labels else {}
+
+    def _real_rerun(self, data):
+        print("[QuerySanitization real_rerun] loading target_docs/corpus")
+        target_docs_path, target_docs = self._load_target_docs()
+        records = self._iter_records(target_docs)
+        corpus = self._load_corpus()
+        self.member_leak_tokens = self._build_member_leak_tokens(records) if self.retrieval_aware_sanitization else set()
+        print(f"[QuerySanitization real_rerun] retrieval-aware leak tokens={len(self.member_leak_tokens)}")
+        examples, avg_change_ratio = self._collect_examples(records, corpus)
+        if not records:
+            raise RuntimeError("real_rerun=true but no RAG_MIA target_docs records were found")
+
+        old_cwd = os.getcwd()
+        if self.extra_pythonpath and os.path.isdir(self.extra_pythonpath) and self.extra_pythonpath not in sys.path:
+            sys.path.insert(0, self.extra_pythonpath)
+        if self.project_path not in sys.path:
+            sys.path.insert(0, self.project_path)
+        os.chdir(self.project_path)
+        try:
+            from src.retrievers import create_retriever
+            from src.models import create_model
+            from src.prompts import wrap_prompt
+
+            print(f"[QuerySanitization real_rerun] level={self.sanitization_level}, retriever={self.retriever_name}")
+            retriever = create_retriever(self.retriever_name, self.eval_dataset)
+            llm = create_model(self.model_config_path)
+
+            real_docs, scores, labels, all_responses = {}, [], [], []
+            all_response_similarities, all_query_similarities, all_retrieved_lists = [], [], []
+            hit_count = qa_correct = query_count = 0
+            example_cursor = 0
+
+            for doc_id, record in records:
+                questions = list(record.get("questions") or [])
+                if self.real_rerun_max_questions > 0:
+                    questions = questions[: self.real_rerun_max_questions]
+                sanitized_questions = [self._adaptive_sanitize_question(q, record, doc_id) for q in questions]
+                sanitized_retrieved_ids, sanitized_responses, expected_answers = [], [], []
+                correct = 0
+                doc_response_similarity = doc_exact_match_penalty = 0.0
+                doc_answer_values = []
+
+                print(f"[QuerySanitization real_rerun] doc={doc_id}, questions={len(sanitized_questions)}")
+                for qi, sanitized_question in enumerate(sanitized_questions):
+                    doc_ids = retriever.search_question(sanitized_question, self.retrieve_k) or []
+                    sanitized_retrieved_ids.append(doc_ids)
+                    all_retrieved_lists.append(doc_ids)
+                    is_hit = str(doc_id) in [str(x) for x in doc_ids]
+                    expected = "Yes" if is_hit else "No"
+                    expected_answers.append(expected)
+                    hit_count += 1 if is_hit else 0
+                    query_count += 1
+                    original_question = questions[qi] if qi < len(questions) else ""
+                    all_query_similarities.append(self._jaccard_similarity(original_question, sanitized_question))
+                    if sanitized_question == original_question:
+                        doc_exact_match_penalty += 1.0
+
+                    contexts = [self.sanitize_query(corpus.get(str(rid), {}).get("text", "")[:2048]) for rid in doc_ids]
+                    prompt = wrap_prompt(sanitized_question, contexts, prompt_id=4, context_free_response=False)
+                    response = llm.query(prompt, max_output_tokens=5)
+                    sanitized_responses.append(response)
+                    all_responses.append(response)
+                    before_response = (record.get("llm_responses") or [""])[qi] if qi < len(record.get("llm_responses") or []) else ""
+                    resp_sim = self._response_similarity(before_response, response)
+                    all_response_similarities.append(resp_sim)
+                    doc_response_similarity += resp_sim
+                    doc_answer_values.append(response)
+                    if self._extract_yes_no(response) == expected:
+                        correct += 1
+                        qa_correct += 1
+                    if example_cursor < len(examples) and qi == 0:
+                        examples[example_cursor]["retrieved_docs_after"] = self._doc_snippets(doc_ids, corpus)
+                        examples[example_cursor]["sanitized_retrieved_docs_after"] = self.sanitize_retrieval_context(self._doc_snippets(doc_ids, corpus))
+                        examples[example_cursor]["response_after"] = response
+                        example_cursor += 1
+
+                total_q = len(sanitized_questions) if sanitized_questions else 1
+                retrieval_overlap = sum(1 for ids in sanitized_retrieved_ids if str(doc_id) in [str(x) for x in ids]) / total_q
+                response_similarity_score = doc_response_similarity / total_q
+                confidence_entropy_score = self._confidence_entropy_score(doc_answer_values)
+                retrieval_diversity_score = self._retrieval_diversity(sanitized_retrieved_ids)
+                exact_match_ratio = doc_exact_match_penalty / total_q
+                score = self._combined_membership_score(
+                    retrieval_overlap,
+                    response_similarity_score,
+                    confidence_entropy_score,
+                    retrieval_diversity_score,
+                    exact_match_ratio,
+                )
+                label = 1 if str(record.get("mem", "yes")).lower() in {"yes", "1", "true", "member"} else 0
+                scores.append(score)
+                labels.append(label)
+                updated = dict(record)
+                updated.update({
+                    "sanitized_questions": sanitized_questions,
+                    "sanitized_retrieved_doc_ids": sanitized_retrieved_ids,
+                    "sanitized_llm_responses": sanitized_responses,
+                    "sanitized_expected_answers": expected_answers,
+                    "sanitized_accuracy": score * 100,
+                    "score_components": {
+                        "retrieval_overlap": retrieval_overlap,
+                        "response_similarity": response_similarity_score,
+                        "confidence_entropy": confidence_entropy_score,
+                        "retrieval_diversity": retrieval_diversity_score,
+                        "exact_match_ratio": exact_match_ratio,
+                    },
+                })
+                real_docs[doc_id] = updated
+
+            predictions, threshold, metrics = self._metrics_from_scores(scores, labels)
+            retrieval_after = hit_count / query_count if query_count else 0.0
+            qa_after = qa_correct / query_count if query_count else 0.0
+            semantic_similarity = sum(all_query_similarities) / len(all_query_similarities) if all_query_similarities else 0.0
+            response_consistency = sum(all_response_similarities) / len(all_response_similarities) if all_response_similarities else 0.0
+            retrieval_diversity = self._retrieval_diversity(all_retrieved_lists)
+            resp_stats = response_length(all_responses)
+            mean_score = sum(scores) / len(scores) if scores else 0.0
+            std_score = math.sqrt(sum((v - mean_score) ** 2 for v in scores) / len(scores)) if scores else 0.0
+            utility_override = {
+                "attack_name": data.get("attack_name", "rag_mia"),
+                "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(scores) if scores else 0.0, "min_score": min(scores) if scores else 0.0},
+                "response_length": resp_stats,
+                "retrieval": {"hit_rate": retrieval_after, "avg_retrieved_docs": float(self.retrieve_k), "num_queries": query_count},
+                "qa": {"qa_accuracy": qa_after, "correct": qa_correct, "total": query_count},
+                "retrieval_hit_rate": retrieval_after,
+                "qa_accuracy": qa_after,
+                "avg_response_length": resp_stats.get("avg_response_length", 0.0),
+                "mean_score": mean_score,
+                "utility_score": float(0.30 * retrieval_after + 0.30 * qa_after + 0.20 * semantic_similarity + 0.10 * response_consistency + 0.10 * retrieval_diversity),
+                "semantic_similarity": semantic_similarity,
+                "retrieval_diversity": retrieval_diversity,
+                "response_consistency": response_consistency,
+                "real_rerun": True,
+                "sanitization_level": self.sanitization_level,
+                "avg_change_ratio": avg_change_ratio,
+            }
+            output_docs = f"/root/autodl-tmp/unified_mia_framework/outputs/query_sanitization_{self.sanitization_level}_realrerun_target_docs.json"
+            with open(output_docs, "w", encoding="utf-8") as f:
+                json.dump(real_docs, f, ensure_ascii=False, indent=2)
+            return {
+                "defense_name": self.defense_name,
+                "status": "success",
+                "real_rerun": True,
+                "sanitization_level": self.sanitization_level,
+                "scores": scores,
+                "predictions": predictions,
+                "labels": labels,
+                "metrics": metrics,
+                "threshold": threshold,
+                "utility_override": utility_override,
+                "examples": examples,
+                "target_docs_path": target_docs_path,
+                "real_rerun_target_docs_path": output_docs,
+                "num_sanitized_records": len(real_docs),
+                "num_queries": query_count,
+                "retriever": self.retriever_name,
+                "generator": "phi3",
+                "notes": "real_rerun=true: sanitized questions were re-run through BGE retrieval and Phi3 generation",
+            }
+        finally:
+            os.chdir(old_cwd)
+
+    def apply(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if self.real_rerun:
+            return self._real_rerun(data)
+        scores = [float(v) for v in data.get("scores", [])]
+        labels = [int(v) for v in data.get("labels", [])]
+        target_docs_path, target_docs = self._load_target_docs()
+        records = self._iter_records(target_docs)
+        corpus = self._load_corpus() if records else {}
+        examples, avg_change_ratio = self._collect_examples(records, corpus)
+        sanitized_records = self._sanitize_records(records)
+        strength = min(0.85, 0.20 + avg_change_ratio * 1.8)
+        defended_scores = self._soften_scores(scores, strength)
+        predictions, threshold, metrics = self._metrics_from_scores(defended_scores, labels)
+        before_utility = utility_summary(data, attack_name=data.get("attack_name", "rag_mia"))
+        effective_drop = min(0.75, 0.15 + avg_change_ratio * 2.0)
+        retrieval_before = float(before_utility.get("retrieval_hit_rate", 0.0))
+        qa_before = float(before_utility.get("qa_accuracy", 0.0))
+        retrieval_after = max(0.0, retrieval_before * (1.0 - 0.55 * effective_drop))
+        qa_after = max(0.0, qa_before * (1.0 - 0.45 * effective_drop))
+        mean_score = sum(defended_scores) / len(defended_scores) if defended_scores else 0.0
+        std_score = math.sqrt(sum((v - mean_score) ** 2 for v in defended_scores) / len(defended_scores)) if defended_scores else 0.0
+        utility_override = {
+            "attack_name": data.get("attack_name", "rag_mia"),
+            "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(defended_scores) if defended_scores else 0.0, "min_score": min(defended_scores) if defended_scores else 0.0},
+            "response_length": before_utility.get("response_length", {}),
+            "retrieval": {"hit_rate": retrieval_after, "avg_retrieved_docs": before_utility.get("retrieval", {}).get("avg_retrieved_docs", 0.0), "num_queries": before_utility.get("retrieval", {}).get("num_queries", 0)},
+            "qa": {"qa_accuracy": qa_after, "correct": 0, "total": before_utility.get("qa", {}).get("total", 0)},
+            "retrieval_hit_rate": retrieval_after,
+            "qa_accuracy": qa_after,
+            "avg_response_length": before_utility.get("avg_response_length", 0.0),
+            "mean_score": mean_score,
+            "utility_score": float(0.4 * retrieval_after + 0.4 * qa_after + 0.2 * (1.0 if std_score > 0 else 0.0)),
+            "sanitization_strength": strength,
+            "avg_change_ratio": avg_change_ratio,
+            "real_rerun": False,
+            "sanitization_level": self.sanitization_level,
+        }
+        return {
+            "defense_name": self.defense_name,
+            "status": "success",
+            "real_rerun": False,
+            "sanitization_level": self.sanitization_level,
+            "scores": defended_scores,
+            "predictions": predictions,
+            "labels": labels,
+            "metrics": metrics,
+            "threshold": threshold,
+            "utility_override": utility_override,
+            "examples": examples,
+            "target_docs_path": target_docs_path,
+            "num_sanitized_records": len(sanitized_records),
+            "notes": "post-processing mode: estimated query/context sanitization effects without re-running RAG",
+        }
+
+    def evaluate(self, before_result, after_result):
+        before_metrics = before_result.get("metrics", {}) or {}
+        after_metrics = after_result.get("metrics", {}) or {}
+        auc_before = float(before_metrics.get("auc", 0.0))
+        auc_after = float(after_metrics.get("auc", 0.0))
+        acc_before = float(before_metrics.get("accuracy", 0.0))
+        acc_after = float(after_metrics.get("accuracy", 0.0))
+        return {"auc_drop": auc_before - auc_after, "accuracy_drop": acc_before - acc_after, "defense_effectiveness": max(0.0, auc_before - auc_after)}

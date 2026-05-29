@@ -1,0 +1,33 @@
+attack_name: janus
+finetune_mode: lora_ft
+project_path: /root/autodl-tmp/Janus
+python_path: /root/miniconda3/envs/dcmi/bin/python
+model_path: /root/autodl-tmp/models/gpt2
+train_data: /root/autodl-tmp/Janus/data/synthetic_pii_train_30.jsonl
+eval_data: /root/autodl-tmp/Janus/data/synthetic_pii_eval.jsonl
+mode: synthetic_safe
+pii_type: email
+fixed:
+  lora_r: 8
+  train_size: 30
+boundary_sweep:
+  learning_rate:
+    - 2e-4
+    - 3e-4
+    - 4e-4
+    - 5e-4
+  epochs:
+    - 3
+    - 4
+    - 5
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target_modules:
+  - c_attn
+batch_size: 4
+max_length: 128
+max_new_tokens: 32
+num_beams: 5
+output_path: /root/autodl-tmp/Janus/outputs/janus_lora_boundary_results.json
+unified_output_dir: /root/autodl-tmp/unified_mia_framework/outputs
+timeout: 7200

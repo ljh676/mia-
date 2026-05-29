@@ -1,0 +1,38 @@
+attack_name: janus
+janus_mode: true_heldout_recovery
+project_path: /root/autodl-tmp/Janus
+python_path: /root/miniconda3/envs/dcmi/bin/python
+model_alias: gpt2-medium
+model_path: /root/autodl-tmp/models/gpt2-medium
+pretrain_pii_data: /root/autodl-tmp/Janus/data/synthetic_pretrain_pii.jsonl
+known_s1_data: /root/autodl-tmp/Janus/data/synthetic_janus_known_s1.jsonl
+hidden_s2_data: /root/autodl-tmp/Janus/data/synthetic_janus_hidden_s2.jsonl
+s1_size: 30
+s2_size: 100
+strict_disjoint: true
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target_modules:
+  - c_attn
+  - c_proj
+  - c_fc
+lora_learning_rate: 5e-4
+lora_epochs: 10
+full_ft_learning_rate: 4e-4
+full_ft_epochs: 5
+pretrain_learning_rate: 5e-4
+pretrain_epochs: 5
+forget_learning_rate: 5e-4
+forget_epochs: 2
+general_text_count: 600
+batch_size: 4
+max_length: 128
+max_new_tokens: 32
+num_beams: 5
+output_path: /root/autodl-tmp/Janus/outputs/janus_lora_true_pipeline_gpt2medium_result.json
+output_file: ./outputs/janus_lora_true_pipeline_gpt2medium_result.json
+log_path: ./outputs/logs/janus_lora_true_pipeline_gpt2medium.log
+timeout: 14400
+execute_original: true
+skip_if_model_missing: true

@@ -1,0 +1,8 @@
+defense_name: miashield
+project_path: /root/autodl-tmp/MIAShield
+oracle: chain
+num_subsets: 4
+aggregation: average
+hash_method: sha1
+execute_original: false
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/miashield_result.json

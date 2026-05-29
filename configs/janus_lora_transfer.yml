@@ -1,0 +1,14 @@
+attack_name: janus_lora_transfer
+project_path: /root/autodl-tmp/Janus
+python_path: /root/miniconda3/envs/dcmi/bin/python
+source_model_alias: gpt2
+source_model_path: /root/autodl-tmp/Janus/models/gpt2_synthetic_forgotten
+source_lora_adapter: /root/autodl-tmp/Janus/models/gpt2_lora_ft_janus_s1
+target_model_alias: distilgpt2
+target_model_path: /root/autodl-tmp/Janus/models/gpt2_synthetic_forgotten_distilgpt2
+s2_data: /root/autodl-tmp/Janus/data/synthetic_janus_hidden_s2.jsonl
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/janus_lora_cross_model_transfer_result.json
+output_file: ./outputs/janus_lora_cross_model_transfer_result.json
+log_path: ./outputs/logs/janus_lora_transfer.log
+timeout: 3600
+execute_original: true

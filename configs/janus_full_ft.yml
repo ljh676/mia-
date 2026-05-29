@@ -1,0 +1,31 @@
+attack_name: janus
+project_path: /root/autodl-tmp/Janus
+python_path: /root/miniconda3/envs/dcmi/bin/python
+model_path: /root/autodl-tmp/models/gpt2
+entry_script: run_janus_minimal.py
+train_data: /root/autodl-tmp/Janus/data/synthetic_pii_train.jsonl
+eval_data: /root/autodl-tmp/Janus/data/synthetic_pii_eval.jsonl
+latest_output_path: /root/autodl-tmp/Janus/outputs/janus_result.json
+output_dir: ./outputs
+output_file: ./outputs/janus_result.json
+finetune_mode: full_ft
+output_path: /root/autodl-tmp/Janus/outputs/janus_full_ft_result.json
+log_path: ./outputs/logs/janus.log
+mode: synthetic_safe
+pii_type: email
+train_size: 30
+eval_size: 100
+learning_rate: 5e-5
+batch_size: 4
+epochs: 2
+max_length: 128
+max_new_tokens: 32
+num_beams: 5
+lora_r: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target_modules:
+  - c_attn
+timeout: 3600
+execute_original: true
+extra_args: []

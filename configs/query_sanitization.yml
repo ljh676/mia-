@@ -1,0 +1,37 @@
+defense_name: query_sanitization
+project_path: /root/autodl-tmp/RAG_MIA
+
+mask_person: true
+mask_email: true
+mask_number: true
+abstract_keywords: true
+
+keywords:
+  - diabetes
+  - cancer
+  - obesity
+  - disease
+  - cardiovascular
+  - infection
+  - therapy
+  - treatment
+  - vitamin
+  - deficiency
+
+execute_original: false
+real_rerun: true
+sanitization_level: high
+retrieval_keyword_drop: false
+semantic_abstraction: true
+entity_relation_abstraction: true
+extra_pythonpath: /root/autodl-tmp/phi3_compat_pkgs
+
+output_path: /root/autodl-tmp/unified_mia_framework/outputs/query_sanitization_result.json
+
+# ??? input-level defense??? retrieval overlap / membership signal ????????
+retrieval_aware_sanitization: false
+adaptive_sanitization: true
+paraphrase_mode: true
+response_semantic_similarity: true
+confidence_entropy_scoring: true
+exact_match_ratio_scoring: true

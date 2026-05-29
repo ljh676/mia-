@@ -1,0 +1,13 @@
+attack_name: spv_mia
+project_path: /root/autodl-tmp/SPV_MIA
+config_path: /root/autodl-tmp/SPV_MIA/configs/spv_minimal.yml
+python_path: /root/miniconda3/envs/dcmi/bin/python
+output_dir: ./outputs
+output_file: ./outputs/spv_mia_result.json
+output_path: /root/autodl-tmp/SPV_MIA/outputs/spv_mia_result.json
+log_path: ./outputs/logs/spv_mia.log
+execute_original: true
+model_path: /root/autodl-tmp/models/gpt2
+method: probabilistic_variation
+timeout: 1800
+extra_args: []

@@ -1,0 +1,10 @@
+# ?? benchmark ????
+dataset: nfcorpus
+retriever: bge
+llm: phi3
+retrieval_k: 3
+
+utility_metrics:
+  - qa_accuracy
+  - retrieval_hit_rate
+  - semantic_similarity

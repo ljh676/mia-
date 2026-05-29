@@ -1,0 +1,350 @@
+
+"""EPD: Ensemble Privacy Defense for RAG membership evaluation.
+
+EPD ???????target RAG model?base model ? judge model ???????
+- target_answer??? retrieval context ? RAG answer?
+- base_answer???? retrieval context???? base model ?????
+- judge_answer??? privacy ? accuracy????????
+
+?????? unified_mia_framework ? RAG_MIA target_docs??? real_rerun=true?
+"""
+
+import glob
+import json
+import math
+import os
+import re
+import sys
+from typing import Any, Dict, List, Tuple
+
+from .base import BaseDefense
+from utils.metrics import compute_metrics
+from utils.utility_metrics import response_length
+
+
+class EPDDefense(BaseDefense):
+    """RAG ?? inference-time ensemble privacy defense?"""
+
+    defense_name = "epd"
+
+    def prepare(self):
+        """??????????"""
+        self.real_rerun = bool(self.config.get("real_rerun", True))
+        self.project_path = self.config.get("project_path", "/root/autodl-tmp/unified_mia_framework")
+        self.rag_project_path = self.config.get("rag_project_path", "/root/autodl-tmp/RAG_MIA")
+        self.output_path = self.config.get("output_path", "/root/autodl-tmp/unified_mia_framework/outputs/epd_result.json")
+        self.retriever = self.config.get("retriever", "bge")
+        self.retrieval_k = int(self.config.get("retrieval_k", 3))
+        self.model_config_path = self.config.get(
+            "model_config_path",
+            os.path.join(self.rag_project_path, "model_configs", "phi3_config.json"),
+        )
+        self.extra_pythonpath = self.config.get("extra_pythonpath", "/root/autodl-tmp/phi3_compat_pkgs")
+        self.max_records = int(self.config.get("max_records", 0))
+        self.max_questions_per_doc = int(self.config.get("max_questions_per_doc", 0))
+        self.max_examples = int(self.config.get("max_examples", 5))
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        return self
+
+    def _latest_target_docs(self) -> str:
+        """???? M100/N10 target_docs?????? RAG_MIA target_docs?"""
+        explicit = self.config.get("target_docs_path")
+        if explicit and os.path.exists(explicit):
+            return explicit
+        pattern = os.path.join(self.rag_project_path, "results", "target_docs", "*.json")
+        candidates = glob.glob(pattern)
+        preferred = [p for p in candidates if "M100-N10" in os.path.basename(p)]
+        if preferred:
+            candidates = preferred
+        if not candidates:
+            return ""
+        candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return candidates[0]
+
+    def _load_target_docs(self) -> Tuple[str, Dict[str, Dict[str, Any]]]:
+        """?? RAG_MIA target_docs?"""
+        path = self._latest_target_docs()
+        if not path:
+            return "", {}
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return path, data if isinstance(data, dict) else {str(i): v for i, v in enumerate(data) if isinstance(v, dict)}
+
+    def _load_corpus(self) -> Dict[str, Dict[str, str]]:
+        """?? NFCorpus corpus?? retrieved ids ? context?"""
+        corpus_json = os.path.join(self.rag_project_path, "datasets", "nfcorpus", "corpus.json")
+        corpus_jsonl = os.path.join(self.rag_project_path, "datasets", "nfcorpus", "corpus.jsonl")
+        if os.path.exists(corpus_json):
+            with open(corpus_json, "r", encoding="utf-8") as f:
+                return json.load(f)
+        corpus = {}
+        with open(corpus_jsonl, "r", encoding="utf-8") as f:
+            for line in f:
+                item = json.loads(line)
+                doc_id = item.get("_id") or item.get("id")
+                corpus[str(doc_id)] = {"title": item.get("title", ""), "text": item.get("text", "")}
+        return corpus
+
+    def _ensure_rag_imports(self):
+        """? RAG_MIA ? Phi3 ????? import path?"""
+        if self.extra_pythonpath and os.path.isdir(self.extra_pythonpath) and self.extra_pythonpath not in sys.path:
+            sys.path.insert(0, self.extra_pythonpath)
+        if self.rag_project_path not in sys.path:
+            sys.path.insert(0, self.rag_project_path)
+
+    def _create_model(self):
+        """?? judge/base ????? Phi3 ???"""
+        self._ensure_rag_imports()
+        old_cwd = os.getcwd()
+        os.chdir(self.rag_project_path)
+        try:
+            from src.models import create_model
+            model = create_model(self.model_config_path)
+            model.to(getattr(model, "device", None))
+            return model
+        finally:
+            os.chdir(old_cwd)
+
+    def _wrap_rag_prompt(self, query: str, contexts: List[str]) -> str:
+        """?? RAG_MIA ? prompt ?? target RAG prompt?"""
+        self._ensure_rag_imports()
+        from src.prompts import wrap_prompt
+        return wrap_prompt(query, contexts, prompt_id=4, context_free_response=False)
+
+    def generate_target_answer(self, query: str, contexts: List[str], model=None) -> str:
+        """?? target RAG answer??????????? llm_responses?"""
+        if model is None:
+            return "I don't know"
+        prompt = self._wrap_rag_prompt(query, contexts)
+        return model.query(prompt, max_output_tokens=5)
+
+    def generate_base_answer(self, query: str, model) -> str:
+        """????? retrieval context ? base answer?"""
+        prompt = (
+            "Answer ONLY with one of: Yes, No, or I don't know.\n"
+            "Do not use retrieved documents. Use only your general knowledge.\n\n"
+            f"Question:\n{query}\n\nAnswer:"
+        )
+        return model.query(prompt, max_output_tokens=5)
+
+    def judge_answer(self, query: str, target_answer: str, base_answer: str, target_loss: float, base_loss: float, model) -> str:
+        """judge model ?? privacy + accuracy ???????"""
+        prompt = f"""You are a judge that needs to generate a final answer based on two candidate answers.
+
+Consider both PRIVACY and ACCURACY.
+
+Question:
+{query}
+
+Answer A from target RAG model:
+{target_answer}
+
+Answer B from base model:
+{base_answer}
+
+Target answer loss:
+{target_loss:.4f}
+
+Base answer loss:
+{base_loss:.4f}
+
+Your task:
+1. Preserve factual correctness.
+2. Reduce privacy leakage.
+3. Avoid exact quotes or overly specific memorized details.
+4. Prefer general wording when possible.
+5. Produce one final answer.
+
+Final answer:"""
+        return model.query(prompt, max_output_tokens=5)
+
+    def _extract_yes_no(self, value: Any) -> str:
+        """??????? Yes/No/I don't know?"""
+        text = str(value or "")
+        if re.search(r"i\s*(do\s*)?n't\s+know|i\s+do\s+not\s+know|unknown", text, re.IGNORECASE):
+            return "I don't know"
+        m = re.search(r"\b(Yes|No)\b", text, re.IGNORECASE)
+        return m.group(1).capitalize() if m else "I don't know"
+
+    def _answer_loss_proxy(self, answer: str) -> float:
+        """?? loss proxy?I don't know ?????????Yes/No ??????"""
+        normalized = self._extract_yes_no(answer)
+        return 1.0 if normalized == "I don't know" else 0.2
+
+    def _doc_score(self, doc_id: str, final_answers: List[str], retrieved_ids: List[List[str]]) -> Tuple[float, int, int]:
+        """?? final answer ? retrieval hit ?? doc-level membership score?"""
+        if not final_answers:
+            return 0.0, 0, 0
+        hits = 0
+        correct = 0
+        for answer, ids in zip(final_answers, retrieved_ids):
+            ids = ids if isinstance(ids, list) else [ids]
+            is_hit = str(doc_id) in [str(x) for x in ids]
+            expected = "Yes" if is_hit else "No"
+            normalized = self._extract_yes_no(answer)
+            if is_hit:
+                hits += 1
+            if normalized == expected:
+                correct += 1
+        retrieval_overlap = hits / max(1, len(final_answers))
+        answer_yes_rate = sum(1 for a in final_answers if self._extract_yes_no(a) == "Yes") / max(1, len(final_answers))
+        answer_confidence = sum(1 for a in final_answers if self._extract_yes_no(a) in {"Yes", "No"}) / max(1, len(final_answers))
+        # EPD ? score ?? retrieval overlap ? final answer ???????????
+        score = 0.50 * retrieval_overlap + 0.35 * answer_yes_rate + 0.15 * answer_confidence
+        return float(score), hits, correct
+
+    def _metrics_from_scores(self, scores: List[float], labels: List[int]) -> Tuple[List[int], float, Dict[str, float]]:
+        """???????? predictions ? metrics?"""
+        if not scores:
+            return [], 0.0, {}
+        threshold = sorted(scores)[len(scores) // 2]
+        predictions = [1 if v >= threshold else 0 for v in scores]
+        return predictions, float(threshold), compute_metrics(labels, predictions, scores)
+
+    def apply(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """?? EPD real rerun?????? after_result?"""
+        if not self.real_rerun:
+            return {
+                "defense_name": self.defense_name,
+                "status": "success",
+                "real_rerun": False,
+                "scores": data.get("scores", []),
+                "predictions": data.get("predictions", []),
+                "labels": data.get("labels", []),
+                "metrics": data.get("metrics", {}),
+                "notes": "EPD configured with real_rerun=false; no response fusion was applied.",
+            }
+
+        target_docs_path, target_docs = self._load_target_docs()
+        if not target_docs:
+            raise RuntimeError("EPD real_rerun=true but no RAG_MIA target_docs were found")
+        corpus = self._load_corpus()
+        model = self._create_model()
+
+        records = list(target_docs.items())
+        if self.max_records > 0:
+            records = records[: self.max_records]
+
+        epd_docs: Dict[str, Dict[str, Any]] = {}
+        scores: List[float] = []
+        labels: List[int] = []
+        all_final_answers: List[str] = []
+        total_queries = 0
+        retrieval_hits = 0
+        qa_correct = 0
+        examples: List[Dict[str, Any]] = []
+
+        for doc_index, (doc_id, record) in enumerate(records):
+            questions = list(record.get("questions") or [])
+            retrieved_lists = list(record.get("retrieved_doc_ids") or [])
+            target_answers = list(record.get("llm_responses") or [])
+            if self.max_questions_per_doc > 0:
+                questions = questions[: self.max_questions_per_doc]
+                retrieved_lists = retrieved_lists[: self.max_questions_per_doc]
+                target_answers = target_answers[: self.max_questions_per_doc]
+
+            base_answers, judge_answers = [], []
+            target_losses, base_losses = [], []
+            for qi, query in enumerate(questions):
+                ids = retrieved_lists[qi] if qi < len(retrieved_lists) else []
+                ids = ids if isinstance(ids, list) else [ids]
+                contexts = [corpus.get(str(rid), {}).get("text", "")[:2048] for rid in ids]
+                target_answer = target_answers[qi] if qi < len(target_answers) else self.generate_target_answer(query, contexts, model)
+                base_answer = self.generate_base_answer(query, model)
+                target_loss = self._answer_loss_proxy(target_answer)
+                base_loss = self._answer_loss_proxy(base_answer)
+                final_answer = self.judge_answer(query, target_answer, base_answer, target_loss, base_loss, model)
+
+                base_answers.append(base_answer)
+                judge_answers.append(final_answer)
+                target_losses.append(target_loss)
+                base_losses.append(base_loss)
+                all_final_answers.append(final_answer)
+
+                is_hit = str(doc_id) in [str(x) for x in ids]
+                expected = "Yes" if is_hit else "No"
+                retrieval_hits += 1 if is_hit else 0
+                qa_correct += 1 if self._extract_yes_no(final_answer) == expected else 0
+                total_queries += 1
+
+                if len(examples) < self.max_examples:
+                    examples.append({
+                        "query": query,
+                        "retrieved_doc_ids": [str(x) for x in ids],
+                        "target_answer": target_answer,
+                        "base_answer": base_answer,
+                        "judge_answer": final_answer,
+                        "target_loss": target_loss,
+                        "base_loss": base_loss,
+                        "context_excerpt": "\n".join(contexts)[:800],
+                    })
+
+            score, _, _ = self._doc_score(doc_id, judge_answers, retrieved_lists[: len(judge_answers)])
+            label = 1 if str(record.get("mem", "yes")).lower() in {"yes", "1", "true", "member"} else 0
+            scores.append(score)
+            labels.append(label)
+            updated = dict(record)
+            updated.update({
+                "epd_base_answers": base_answers,
+                "epd_judge_answers": judge_answers,
+                "epd_target_losses": target_losses,
+                "epd_base_losses": base_losses,
+                "epd_score": score,
+            })
+            epd_docs[str(doc_id)] = updated
+            print(f"[EPD] doc={doc_index+1}/{len(records)} id={doc_id} questions={len(questions)} score={score:.4f}")
+
+        predictions, threshold, metrics = self._metrics_from_scores(scores, labels)
+        retrieval_hit_rate = retrieval_hits / total_queries if total_queries else 0.0
+        qa_accuracy = qa_correct / total_queries if total_queries else 0.0
+        mean_score = sum(scores) / len(scores) if scores else 0.0
+        std_score = math.sqrt(sum((v - mean_score) ** 2 for v in scores) / len(scores)) if scores else 0.0
+        resp_stats = response_length(all_final_answers)
+        utility_override = {
+            "attack_name": data.get("attack_name", "rag_mia"),
+            "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(scores) if scores else 0.0, "min_score": min(scores) if scores else 0.0},
+            "response_length": resp_stats,
+            "retrieval": {"hit_rate": retrieval_hit_rate, "avg_retrieved_docs": float(self.retrieval_k), "num_queries": total_queries},
+            "qa": {"qa_accuracy": qa_accuracy, "correct": qa_correct, "total": total_queries},
+            "retrieval_hit_rate": retrieval_hit_rate,
+            "qa_accuracy": qa_accuracy,
+            "avg_response_length": resp_stats.get("avg_response_length", 0.0),
+            "mean_score": mean_score,
+            "utility_score": float(0.40 * retrieval_hit_rate + 0.40 * qa_accuracy + 0.20 * (1.0 if std_score > 0 else 0.0)),
+            "real_rerun": True,
+            "defense_name": "epd",
+        }
+
+        out_docs = os.path.join(self.project_path, "outputs", "epd_realrerun_target_docs.json")
+        with open(out_docs, "w", encoding="utf-8") as f:
+            json.dump(epd_docs, f, ensure_ascii=False, indent=2)
+        return {
+            "defense_name": self.defense_name,
+            "status": "success",
+            "real_rerun": True,
+            "scores": scores,
+            "predictions": predictions,
+            "labels": labels,
+            "metrics": metrics,
+            "threshold": threshold,
+            "utility_override": utility_override,
+            "examples": examples,
+            "target_docs_path": target_docs_path,
+            "epd_target_docs_path": out_docs,
+            "num_records": len(epd_docs),
+            "num_queries": total_queries,
+            "target_model": self.config.get("target_model", "phi3"),
+            "base_model": self.config.get("base_model", "phi3"),
+            "judge_model": self.config.get("judge_model", "phi3"),
+            "notes": "EPD real_rerun=true: target/base/judge answers were fused for RAG privacy defense.",
+        }
+
+    def evaluate(self, before_result, after_result):
+        """?? EPD ?????"""
+        before_metrics = before_result.get("metrics", {}) or {}
+        after_metrics = after_result.get("metrics", {}) or {}
+        auc_before = float(before_metrics.get("auc", 0.0))
+        auc_after = float(after_metrics.get("auc", 0.0))
+        acc_before = float(before_metrics.get("accuracy", 0.0))
+        acc_after = float(after_metrics.get("accuracy", 0.0))
+        return {"auc_drop": auc_before - auc_after, "accuracy_drop": acc_before - acc_after, "defense_effectiveness": max(0.0, auc_before - auc_after)}
