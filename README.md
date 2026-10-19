@@ -1,5 +1,10 @@
 # Unified Janus-MIA Framework
 
+**正式复现的新入口：[`reproductions/`](reproductions/README.md)。** 包含真实目标训练、
+SPV self-prompt/reference 训练、Neighbour embedding dropout、IA 与 DCMI 的真实 RAG 信号采集。
+历史 `run_attack.py` 配置保留原实验用途；本轮正式实验请使用 `python -m reproductions.run`。
+实验是否完成以运行目录实际 `complete.json` 和逐样本证据为准；IA/DCMI 的生成模型替换已明确标注。
+
 **给老师交接 RAG-MIA、Neighbour-MIA、SPV-MIA、DCMI 代码，请先看
 [四篇 MIA 交接入口](paper_reproductions/README.md)。** 其中按论文逐篇标明实际代码、
 原作者版本、已运行记录与尚未完成的环节，避免把简化实验作为完整论文复现。

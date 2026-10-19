@@ -41,6 +41,9 @@ def export(output):
     for path in (ROOT / "paper_reproductions").rglob("*"):
         if path.is_file() and path.suffix in {".md", ".json", ".py"} and "__pycache__" not in path.parts:
             include(path.relative_to(ROOT).as_posix())
+    for path in (ROOT / "reproductions").rglob("*"):
+        if path.is_file() and path.suffix in {".py", ".json", ".md", ".txt"} and "__pycache__" not in path.parts:
+            include(path.relative_to(ROOT).as_posix())
     for reference in json.loads(files["paper_reproductions/reference_entries.json"]):
         raw = files["paper_reproductions/" + reference["reference_file"]]
         if hashlib.sha256(raw).hexdigest() != reference["sha256"]:
@@ -52,10 +55,12 @@ def export(output):
     registry += "def get_attack(attack_name, config):\n    return ATTACK_REGISTRY[attack_name.lower()](config)\n"
     files["attacks/registry.py"] = registry.encode()
     files["README.md"] = ("# Four-paper MIA code handoff\n\n"
+                          "For the new full-stage experimental pipelines, start with [reproductions](reproductions/README.md).\n\n"
                           "Start with [the per-paper status and code guide](paper_reproductions/README.md).\n\n"
                           "The archive contains the author's code adaptations and pinned original entry references. "
                           "It does not claim that all four paper experiments have been reproduced. "
                           "Data, checkpoints and dependencies must be prepared separately.\n\n"
+                          "The root requirements cover the legacy CLI only; new model pipelines use reproductions/requirements.txt.\n\n"
                           "```bash\npython -m pip install -r requirements.txt\n"
                           "python scripts/restore_external_sources.py\npython run_attack.py --help\n```\n").encode()
     for name, raw in files.items():

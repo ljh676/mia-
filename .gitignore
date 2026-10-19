@@ -11,6 +11,8 @@ __pycache__/
 *.safetensors
 .cache/
 .vscode/
+runs/
+reproduction_assets/
 
 # Archived Python source uses these directory names; keep code, not assets.
 !external/RAG_MIA/src/models/

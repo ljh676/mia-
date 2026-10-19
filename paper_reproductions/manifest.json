@@ -6,6 +6,8 @@
   "methods": [
     {
       "method": "rag_mia",
+      "formal_pipeline": "reproductions/run.py",
+      "formal_config": "reproductions/configs/ia_nfcorpus_local.json",
       "paper_title": "Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation",
       "desktop_pdf_filename": "mia隐秘成员推断攻击（有码）.pdf",
       "paper_method_name": "Interrogation Attack (IA)",
@@ -27,6 +29,8 @@
     },
     {
       "method": "neighbour_mia",
+      "formal_pipeline": "reproductions/run.py",
+      "formal_config": "reproductions/configs/neighbour_agnews.json",
       "paper_title": "Membership Inference Attacks against Language Models via Neighbourhood Comparison",
       "desktop_pdf_filename": "大模型mia针对句子生成.pdf",
       "project": "Neighbour_MIA",
@@ -47,6 +51,8 @@
     },
     {
       "method": "spv_mia",
+      "formal_pipeline": "reproductions/run.py",
+      "formal_config": "reproductions/configs/spv_agnews_gpt2xl.json",
       "paper_title": "Membership Inference Attacks against Fine-tuned Large Language Models via Self-prompt Calibration",
       "desktop_pdf_filename": "大模型mia针对模型输出概率波动.pdf",
       "project": "SPV_MIA",
@@ -68,6 +74,8 @@
     },
     {
       "method": "dcmi",
+      "formal_pipeline": "reproductions/run.py",
+      "formal_config": "reproductions/configs/dcmi_trec_covid_local.json",
       "paper_title": "DCMI: A Differential Calibration Membership Inference Attack Against Retrieval-Augmented Generation",
       "desktop_pdf_filename": "dcmi差分校准成员攻击（有码）.pdf",
       "project": "DCMI",

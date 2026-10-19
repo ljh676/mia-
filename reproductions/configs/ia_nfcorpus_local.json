@@ -1,0 +1,23 @@
+{
+  "method": "ia",
+  "seed": 42,
+  "corpus": "/root/autodl-tmp/RAG_MIA/datasets/nfcorpus/corpus.jsonl",
+  "target_model": "/root/mia-paper-assets/flan-t5-large",
+  "auxiliary_model": "/root/mia-paper-assets/Qwen3-1.7B",
+  "retriever": "dense",
+  "retrieval_model": "/root/autodl-tmp/DCMI/models/gte-small",
+  "retrieve_k": 3,
+  "max_input_tokens": 2048,
+  "questions_per_document": 30,
+  "unknown_penalty": 5,
+  "query_rewrite": false,
+  "near_duplicate_threshold": 0.95,
+  "calibration_per_class": 200,
+  "test_per_class": 1000,
+  "protocol_differences": [
+    "User authorized replacing unavailable GPT-4o/GPT-4o-mini with a local Qwen3-1.7B instruction model",
+    "Target generator Flan-T5-large differs from IA paper generators; GTE-small selected explicitly",
+    "Vanilla RAG variant without query rewriting, as studied in paper Appendix D",
+    "200 additional calibration samples per class held out from the 1000-per-class test set"
+  ]
+}
