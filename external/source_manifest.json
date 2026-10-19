@@ -824,8 +824,10 @@
         },
         {
           "path": "mia_utils/mia.py",
-          "sha256": "ed559210f5f2dde241b040295138b0c5786148f5b1a4b2b16f4002a3f41d50f1",
-          "source_status": "server_modified"
+          "sha256": "9952d7ddf828233cfc3227232205e72d88d994cdda162561e9a335f6258949fd",
+          "source_status": "server_modified",
+          "server_sha256": "ed559210f5f2dde241b040295138b0c5786148f5b1a4b2b16f4002a3f41d50f1",
+          "archive_changes": "Require aligned reference answers for RAG answer-agreement scoring; no retrieval-hit fallback. See paper_reproductions/rag_mia/README.md."
         },
         {
           "path": "mia_utils/s2.py",

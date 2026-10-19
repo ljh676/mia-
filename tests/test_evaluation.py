@@ -17,7 +17,7 @@ from run_attack import run_attack
 from run_benchmark import run_benchmark
 from run_defense import run_defense
 from utils.metrics import auc, compute_metrics
-from utils.result_parser import parse_result_sources
+from utils.result_parser import parse_result_sources, parse_json_file
 from utils.subprocess_utils import require_fresh_output, run_with_log
 from utils.utility_metrics import (_extract_rag_responses_and_expected, qa_accuracy,
                                    retrieval_hit_rate, utility_drop, utility_summary)
@@ -290,6 +290,37 @@ class EvaluationTests(unittest.TestCase):
         result = function(1)
         self.assertEqual(result["metrics"]["auc"], 0.0)
         self.assertEqual(result["score_orientation"], "predeclared_original")
+
+    def test_rag_cannot_replace_missing_answers_with_retrieval_hits(self):
+        path = self.root / "rag.json"
+        path.write_text(json.dumps({"doc": {"mem": "yes", "retrieved_doc_ids": [["doc"]],
+                                           "llm_responses": ["Yes"], "accuracy": 100}}))
+        with self.assertRaises(ValueError):
+            parse_json_file("rag_mia", str(path))
+
+    def test_rag_uses_reference_answer_agreement(self):
+        path = self.root / "rag.json"
+        path.write_text(json.dumps({
+            "member": {"mem": "yes", "retrieved_doc_ids": [[]], "answers": ["Yes"], "llm_responses": ["Yes"]},
+            "nonmember": {"mem": "no", "retrieved_doc_ids": [["nonmember"]], "answers": ["Yes"], "llm_responses": ["No"]}}))
+        result = parse_json_file("rag_mia", str(path))
+        self.assertEqual(result["scores"], [1.0, 0.0])
+        self.assertEqual(result["metrics"]["auc"], 1.0)
+        self.assertEqual(result["score_source"], "reference_answer_agreement")
+
+    def test_rag_source_scorer_requires_reference_answers(self):
+        import re
+        from types import SimpleNamespace
+        path = REPO_ROOT / "external/RAG_MIA/mia_utils/mia.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "MIA_Attacker")
+        node = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "calculate_score")
+        scope = {"re": re}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), scope)
+        current = SimpleNamespace(target_docs={"doc": {"retrieved_doc_ids": [["doc"]], "llm_responses": ["Yes"]}},
+                                  save_target_docs=lambda: self.fail("Invalid scoring must not save a successful result"))
+        with self.assertRaises(ValueError):
+            scope["calculate_score"](current)
 
 
 if __name__ == "__main__":

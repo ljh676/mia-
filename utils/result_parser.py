@@ -70,52 +70,25 @@ def _extract_yes_no(text: Any) -> str:
     return "Unknown"
 
 
-def _parse_rag_mia_target_docs(attack_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    """把 RAG_MIA target_docs 转换为统一 scores/labels。
-
-    evaluate_attack=true 时，优先根据 answers 与 llm_responses 的 Yes/No
-    一致性计算分数；如果还没有 LLM 回答，则退回检索命中率。
-    """
+def _parse_rag_mia_target_docs(attack_name, data):
     result = empty_result(attack_name)
-    scores: List[float] = []
-    labels: List[int] = []
-    for doc_id, doc_data in data.items():
-        # evaluate_attack=true 后优先使用回答正确率。原项目会打印 accuracy，
-        # 但当前版本没有 save_target_docs，所以这里从 answers/llm_responses 复算。
-        answers = doc_data.get("answers", []) or []
-        responses = doc_data.get("llm_responses", []) or []
-        if answers and responses:
-            if len(answers) != len(responses):
-                raise ValueError("RAG answers and responses have different lengths")
-            total = len(answers)
-            correct = 0
-            for answer, response in zip(answers[:total], responses[:total]):
-                if _extract_yes_no(answer) != "Unknown" and _extract_yes_no(answer) == _extract_yes_no(response):
-                    correct += 1
-            scores.append(float(correct / total if total else 0.0))
-            labels.append(1 if str(doc_data.get("mem", "")).lower() == "yes" else 0)
-            continue
-        if "accuracy" in doc_data and doc_data.get("accuracy") is not None:
-            try:
-                score = float(doc_data.get("accuracy", 0.0))
-                scores.append(score / 100.0 if score > 1 else score)
-                labels.append(1 if str(doc_data.get("mem", "")).lower() == "yes" else 0)
-                continue
-            except Exception:
-                pass
-        retrieved = doc_data.get("retrieved_doc_ids", []) or []
-        total = len(retrieved)
-        hits = 0
-        for ids in retrieved:
-            if isinstance(ids, list) and str(doc_id) in [str(x) for x in ids]:
-                hits += 1
-        scores.append(float(hits / total if total else 0.0))
-        labels.append(1 if str(doc_data.get("mem", "")).lower() == "yes" else 0)
-    result["scores"] = scores
-    result["labels"] = labels
-    result["predictions"] = _threshold_predictions(scores)
-    result["sample_ids"] = list(data)
-    result["metrics"] = compute_metrics(labels, result["predictions"], scores)
+    scores, labels = [], []
+    for doc_id, row in data.items():
+        membership = str(row.get("mem", "")).lower()
+        if membership not in {"yes", "no"}:
+            raise ValueError(f"Missing/invalid membership annotation for {doc_id}")
+        gold, responses = row.get("answers"), row.get("llm_responses")
+        if row.get("score_answer_source") == "retrieval_hit_fallback":
+            raise ValueError(f"RAG artifact {doc_id} uses retrieval-hit pseudo answers; regenerate real reference answers")
+        if not isinstance(gold, list) or not isinstance(responses, list) or not gold or len(gold) != len(responses):
+            raise ValueError(f"RAG artifact {doc_id} lacks aligned reference answers and model responses; retrieval hits cannot replace the paper's answer-agreement score")
+        expected = [_extract_yes_no(value) for value in gold]
+        if any(value == "Unknown" for value in expected):
+            raise ValueError(f"RAG artifact {doc_id} has unrecognized reference answers")
+        scores.append(sum(_extract_yes_no(response) == answer for response, answer in zip(responses, expected)) / len(expected))
+        labels.append(int(membership == "yes"))
+    result.update({"scores": scores, "labels": labels, "predictions": [], "sample_ids": list(data),
+                   "metrics": compute_metrics(labels, [], scores), "score_source": "reference_answer_agreement"})
     return result
 
 

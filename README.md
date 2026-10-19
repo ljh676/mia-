@@ -1,5 +1,9 @@
 # Unified Janus-MIA Framework
 
+**给老师交接 RAG-MIA、Neighbour-MIA、SPV-MIA、DCMI 代码，请先看
+[四篇 MIA 交接入口](paper_reproductions/README.md)。** 其中按论文逐篇标明实际代码、
+原作者版本、已运行记录与尚未完成的环节，避免把简化实验作为完整论文复现。
+
 ## 项目简介
 
 Unified Janus-MIA Framework 是一个面向 LLM privacy attack / defense / benchmark 的统一实验框架，用于组织和运行隐私攻击评估、防御方法验证、attack × defense benchmark，以及 privacy-utility tradeoff 分析。

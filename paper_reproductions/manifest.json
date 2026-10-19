@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-19",
+  "paper_identity_basis": "User-provided desktop mia PDFs; title pages visually checked for the four existing attack entries",
+  "folder_inventory": "paper_folder_index.md",
+  "methods": [
+    {
+      "method": "rag_mia",
+      "paper_title": "Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation",
+      "desktop_pdf_filename": "mia隐秘成员推断攻击（有码）.pdf",
+      "paper_method_name": "Interrogation Attack (IA)",
+      "project": "RAG_MIA",
+      "paper_url": "https://arxiv.org/abs/2502.00306",
+      "upstream_url": "https://github.com/ali7naseh/RAG_MIA.git",
+      "commit": "a53e8fda4f1492f204d968d7afb53ce8287c193c",
+      "local_source": "external/RAG_MIA",
+      "local_config": "configs/rag_mia.yml",
+      "status": "incomplete_reference_answers",
+      "evaluation_target": "retrieval_datastore_membership",
+      "paper_reproduction_verified": false,
+      "missing_or_unverified": [
+        "reference_answers",
+        "configured_Phi3_model",
+        "fresh_scoring_run"
+      ],
+      "reference_entry": "reference_entries/rag_mia_original.py"
+    },
+    {
+      "method": "neighbour_mia",
+      "paper_title": "Membership Inference Attacks against Language Models via Neighbourhood Comparison",
+      "desktop_pdf_filename": "大模型mia针对句子生成.pdf",
+      "project": "Neighbour_MIA",
+      "paper_url": "https://aclanthology.org/2023.findings-acl.719/",
+      "upstream_url": "https://github.com/justusmattern27/neighbour-mia.git",
+      "commit": "c73e29960206ad65798a67bb853065721a402d2f",
+      "local_source": "external/Neighbour_MIA",
+      "local_config": "configs/neighbour_mia.yml",
+      "status": "local_algorithm_variant",
+      "evaluation_target": "target_training_membership",
+      "paper_reproduction_verified": false,
+      "missing_or_unverified": [
+        "original_embedding_dropout_neighbours",
+        "matching_member_split_audit",
+        "controlled_method_comparison"
+      ],
+      "reference_entry": "reference_entries/neighbour_mia_original.py"
+    },
+    {
+      "method": "spv_mia",
+      "paper_title": "Membership Inference Attacks against Fine-tuned Large Language Models via Self-prompt Calibration",
+      "desktop_pdf_filename": "大模型mia针对模型输出概率波动.pdf",
+      "project": "SPV_MIA",
+      "paper_url": "https://arxiv.org/abs/2311.06062",
+      "upstream_url": "https://github.com/tsinghua-fib-lab/NeurIPS2024_SPV-MIA.git",
+      "commit": "ee9ebaad837c3798ad9f2c920b01868d9e62478d",
+      "local_source": "external/SPV_MIA",
+      "local_config": "configs/spv_mia.yml",
+      "status": "simplified_single_model_only",
+      "evaluation_target": "target_finetuning_membership",
+      "paper_reproduction_verified": false,
+      "missing_or_unverified": [
+        "target_checkpoint",
+        "self_prompt_reference_data",
+        "reference_checkpoint",
+        "calibrated_probabilistic_variation"
+      ],
+      "reference_entry": "reference_entries/spv_mia_original.py"
+    },
+    {
+      "method": "dcmi",
+      "paper_title": "DCMI: A Differential Calibration Membership Inference Attack Against Retrieval-Augmented Generation",
+      "desktop_pdf_filename": "dcmi差分校准成员攻击（有码）.pdf",
+      "project": "DCMI",
+      "paper_url": "https://arxiv.org/abs/2509.06026",
+      "upstream_url": "https://github.com/Xinyu140203/RAG_MIA.git",
+      "commit": "ef961a1f23d09c62c5fbf69d798e325fb0362e55",
+      "local_source": "external/DCMI",
+      "local_config": "configs/dcmi.yml",
+      "status": "lexical_proxy_only",
+      "evaluation_target": "retrieval_datastore_membership",
+      "paper_reproduction_verified": false,
+      "missing_or_unverified": [
+        "actual_datastore_member_labels",
+        "verification_and_perturbed_queries",
+        "real_RAG_output_signals"
+      ],
+      "reference_entry": "reference_entries/dcmi_original.py"
+    }
+  ]
+}

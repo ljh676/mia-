@@ -222,127 +222,23 @@ class MIA_Attacker(BaseAttacker):
         self.save_target_docs()
 
     def calculate_score(self):
-        """?????????????
-
-        ????? target_docs ????? answers ???M=20,N=5 ??????
-        questions / retrieved_doc_ids / llm_responses??? answers????? KeyError?
-        ?????????
-        1. ???? answers / answer / gold_answers / generated_answers?
-        2. ???? questions ? question_answer_pairs ??? answer?
-        3. ?????? ground-truth answers???????????? doc_id ??????
-           retrieved_doc_ids[i] ??? doc_id => Yes??? No?
-        ???????? evaluation????? fallback/skipped ???
-        """
-        def extract_yes_no(answer):
-            """Extract Yes / No / I don't know from a response."""
-            value = str(answer)
-            if re.search(r"i\s*(do\s*)?n't\s+know|i\s+do\s+not\s+know|unknown", value, re.IGNORECASE):
+        """Score answer agreement using reference answers, never retrieval pseudo-labels."""
+        def normalize(value):
+            text = str(value)
+            if re.search(r"i\s*(do\s*)?n't\s+know|i\s+do\s+not\s+know|unknown", text, re.IGNORECASE):
                 return "I don't know"
-            match = re.search(r'\b(Yes|No)\b', value, re.IGNORECASE)
-            return match.group(1).capitalize() if match else "Unknown"
-
-        def normalize_answer_list(value):
-            """??????????? answer list?"""
-            if value is None:
-                return []
-            if isinstance(value, list):
-                return value
-            if isinstance(value, str):
-                lines = [line.strip() for line in value.splitlines() if line.strip()]
-                return lines if len(lines) > 1 else [value]
-            return [value]
-
-        def get_compatible_answers(doc_id, doc_data):
-            """???? gold answers??????????"""
-            for key in ["answers", "answer", "gold_answers", "generated_answers"]:
-                if key in doc_data and doc_data.get(key) is not None:
-                    values = normalize_answer_list(doc_data.get(key))
-                    if values:
-                        return values, key
-
-            question_answer_pairs = doc_data.get("question_answer_pairs") or doc_data.get("qa_pairs")
-            if isinstance(question_answer_pairs, list):
-                values = []
-                for item in question_answer_pairs:
-                    if isinstance(item, dict):
-                        ans = item.get("answer") or item.get("gold_answer") or item.get("label")
-                        if ans is not None:
-                            values.append(ans)
-                if values:
-                    return values, "question_answer_pairs"
-
-            questions = doc_data.get("questions") or doc_data.get("generated_questions") or []
-            if isinstance(questions, list):
-                values = []
-                for item in questions:
-                    if isinstance(item, dict):
-                        ans = item.get("answer") or item.get("gold_answer") or item.get("label")
-                        if ans is not None:
-                            values.append(ans)
-                if values:
-                    return values, "questions[].answer"
-
-            return [], None
-
-        def fallback_answers_from_retrieval(doc_id, doc_data):
-            """?? gold answers ?????????????????? Yes/No ???"""
-            retrieved_doc_ids = doc_data.get("retrieved_doc_ids") or []
-            values = []
-            for ids in retrieved_doc_ids:
-                if isinstance(ids, list):
-                    values.append("Yes" if str(doc_id) in [str(x) for x in ids] else "No")
-                else:
-                    values.append("Yes" if str(doc_id) == str(ids) else "No")
-            return values
-
-        output_dir = 'results/target_docs'
-        output_file = f'{output_dir}/{self.config.attack_config.name}.json'
-        with open(output_file, 'r') as f:
-            data = json.load(f)
-
-        fallback_count = 0
-        skipped_count = 0
-        processed_count = 0
-        for doc_id, doc_data in data.items():
-            llm_responses = normalize_answer_list(
-                doc_data.get('llm_responses') or doc_data.get('model_responses') or doc_data.get('responses')
-            )
-            correct_answers, answer_source = get_compatible_answers(doc_id, doc_data)
-            if not correct_answers:
-                correct_answers = fallback_answers_from_retrieval(doc_id, doc_data)
-                answer_source = "retrieval_hit_fallback"
-                fallback_count += 1
-                print(f"[WARN] Document {doc_id}: missing answers; using retrieval-hit fallback labels.")
-
-            total_questions = min(len(correct_answers), len(llm_responses))
-            if total_questions == 0:
-                skipped_count += 1
-                print(f"[WARN] Skipping Document {doc_id}: no comparable answers/responses")
-                self.target_docs.setdefault(doc_id, doc_data)
-                self.target_docs[doc_id]['accuracy'] = 0.0
-                self.target_docs[doc_id]['score_warning'] = 'no comparable answers/responses'
-                continue
-
-            correct_count = 0
-            for i in range(total_questions):
-                correct_answer = extract_yes_no(correct_answers[i])
-                llm_answer = extract_yes_no(llm_responses[i])
-                if correct_answer != "Unknown" and correct_answer == llm_answer:
-                    correct_count += 1
-
-            accuracy = correct_count / total_questions * 100
-            print(
-                f"Document {doc_id} - Accuracy: {accuracy:.2f}% "
-                f"({correct_count}/{total_questions}) [answer_source={answer_source}]"
-            )
-            self.target_docs.setdefault(doc_id, doc_data)
-            self.target_docs[doc_id]['accuracy'] = accuracy
-            self.target_docs[doc_id]['score_answer_source'] = answer_source
-            self.target_docs[doc_id]['score_total_questions'] = total_questions
-            processed_count += 1
-
-        print(
-            f"[RAG_MIA calculate_score] processed={processed_count}, "
-            f"fallback={fallback_count}, skipped={skipped_count}"
-        )
+            match = re.search(r"\b(Yes|No)\b", text, re.IGNORECASE)
+            return match.group(1).capitalize() if match else None
+        for doc_id, record in self.target_docs.items():
+            gold = record.get("answers")
+            responses = record.get("llm_responses")
+            if not isinstance(gold, list) or not isinstance(responses, list) or not gold or len(gold) != len(responses):
+                raise ValueError(f"Document {doc_id} needs aligned reference answers and responses before scoring")
+            expected = [normalize(answer) for answer in gold]
+            if any(answer is None for answer in expected):
+                raise ValueError(f"Unrecognized reference answer for {doc_id}")
+            record["accuracy"] = 100 * sum(normalize(response) == answer for response, answer in zip(responses, expected)) / len(gold)
+            record["score_answer_source"] = "answers"
+            record["score_total_questions"] = len(gold)
+        self.save_target_docs()
 

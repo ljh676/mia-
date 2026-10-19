@@ -1,0 +1,30 @@
+[
+  {
+    "method": "rag_mia",
+    "commit": "a53e8fda4f1492f204d968d7afb53ce8287c193c",
+    "upstream_path": "mia_utils/mia.py",
+    "reference_file": "reference_entries/rag_mia_original.py",
+    "sha256": "5bc32da21cf081c9d5e7e4a0b46502abfe238d723c764c7827bf8bb0b73fd7aa"
+  },
+  {
+    "method": "neighbour_mia",
+    "commit": "c73e29960206ad65798a67bb853065721a402d2f",
+    "upstream_path": "attack.py",
+    "reference_file": "reference_entries/neighbour_mia_original.py",
+    "sha256": "ae2e6d4ed3d8e48578cbfe375626309a33d773eb5e5c5b77569539f03311b2d0"
+  },
+  {
+    "method": "spv_mia",
+    "commit": "ee9ebaad837c3798ad9f2c920b01868d9e62478d",
+    "upstream_path": "attack.py",
+    "reference_file": "reference_entries/spv_mia_original.py",
+    "sha256": "ce586d1a750b5794bb1d77e9d0b3da51d11e7e6292b69d60acb3769f63daa9b8"
+  },
+  {
+    "method": "dcmi",
+    "commit": "ef961a1f23d09c62c5fbf69d798e325fb0362e55",
+    "upstream_path": "MIA.py",
+    "reference_file": "reference_entries/dcmi_original.py",
+    "sha256": "74a9ebb521507f79cdec9a55dcc1fc914764654a24d159d13e3158cc1d663719"
+  }
+]
