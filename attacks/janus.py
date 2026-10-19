@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 from .base import BaseAttack
 from utils.metrics import compute_metrics
 from utils.result_parser import empty_result
-from utils.subprocess_utils import run_with_log
+from utils.subprocess_utils import run_with_log, require_fresh_output
 
 
 JANUS_PROJECT_PATH = "/root/autodl-tmp/Janus"
@@ -63,10 +63,11 @@ class JanusAttack(BaseAttack):
             if not path or not os.path.isfile(path):
                 raise FileNotFoundError(f"??? {name}: {path}")
 
-    def _load_result(self) -> Dict[str, Any]:
+    def _load_result(self, run_info) -> Dict[str, Any]:
         """?? Janus JSON???? recovery ????"""
         result = empty_result(self.attack_name)
-        load_path = self.output_path if os.path.isfile(self.output_path) else self.latest_output_path
+        load_path = self.output_path if os.path.abspath(self.output_path) in run_info["fresh_outputs"] else self.latest_output_path
+        require_fresh_output(load_path, run_info)
         if not os.path.isfile(load_path):
             return result
         with open(load_path, "r", encoding="utf-8") as f:
@@ -76,7 +77,7 @@ class JanusAttack(BaseAttack):
         result["predictions"] = [int(v) for v in data.get("predictions", [])]
         for key in [
             "mode", "janus_mode", "model_alias", "model_path", "finetune_mode", "pii_type", "train_size", "eval_size",
-            "recovered", "recovery_rate", "fine_tuning", "lora", "generation", "examples",
+            "recovered", "recovery_rate", "generation_records", "generation_records_complete", "fine_tuning", "lora", "generation", "examples",
             "safety_notes", "pipeline", "paths", "s1_size", "s2_eval_size", "pretrain_size",
             "strict_disjoint_s1_s2", "no_janus_recovery_rate", "full_ft_janus_recovery_rate",
             "lora_ft_janus_recovery_rate", "hidden_s2_metrics", "branches", "training",
@@ -85,7 +86,7 @@ class JanusAttack(BaseAttack):
                 result[key] = data[key]
         result["parsed_output_path"] = load_path
         if data.get("metrics"):
-            result["metrics"].update({k: float(v) for k, v in data["metrics"].items() if k in result["metrics"]})
+            result["metrics"].update({k: float(v) if v is not None else None for k, v in data["metrics"].items() if k in result["metrics"]})
         return result
 
     def _true_pipeline_command(self) -> List[str]:
@@ -161,8 +162,8 @@ class JanusAttack(BaseAttack):
             return self.result
         command = self._true_pipeline_command() if self.janus_mode == "true_heldout_recovery" else self._minimal_command()
         command.extend([str(arg) for arg in self.config.get("extra_args", []) or []])
-        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
-        self.result = self._load_result()
+        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout, output_paths=[self.output_path, self.latest_output_path])
+        self.result = self._load_result(run_info)
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")
         self.result["log_path"] = self.log_path
@@ -170,10 +171,9 @@ class JanusAttack(BaseAttack):
             self.result["stderr"] = run_info.get("stderr", "")[-2000:]
         return self.result
 
-    def evaluate(self) -> Dict[str, Any]:
-        """???????Janus ???? recovery_rate?"""
+    def evaluate(self):
         if not self.result:
             self.result = empty_result(self.attack_name)
-        if self.result.get("labels"):
-            self.result["metrics"] = compute_metrics(self.result.get("labels", []), self.result.get("predictions", []), self.result.get("scores", []))
+        self.result["evaluation_target"] = "association_recovery"
+        self.result["metrics"] = compute_metrics([], [], [])
         return self.result

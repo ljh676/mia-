@@ -20,7 +20,7 @@ import sys
 from typing import Any, Dict, List, Tuple
 
 from .base import BaseDefense
-from utils.metrics import compute_metrics
+from utils.metrics import compute_metrics, compare_metrics
 from utils.utility_metrics import response_length
 
 
@@ -294,6 +294,7 @@ Final answer:"""
                 "defense_name": self.defense_name,
                 "status": "success",
                 "real_rerun": False,
+                "implementation_kind": "no_op", "task_output_changed": False,
                 "scores": data.get("scores", []),
                 "predictions": data.get("predictions", []),
                 "labels": data.get("labels", []),
@@ -414,18 +415,19 @@ Final answer:"""
             "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(scores) if scores else 0.0, "min_score": min(scores) if scores else 0.0},
             "response_length": resp_stats,
             "retrieval": {"hit_rate": retrieval_hit_rate, "avg_retrieved_docs": float(self.retrieval_k), "num_queries": total_queries},
-            "qa": {"qa_accuracy": qa_accuracy, "correct": qa_correct, "total": total_queries},
+            "qa": {"qa_accuracy": None, "correct": None, "total": 0, "status": "no_gold_reference_evaluation"},
             "retrieval_hit_rate": retrieval_hit_rate,
-            "qa_accuracy": qa_accuracy,
+            "qa_accuracy": None,
             "avg_response_length": resp_stats.get("avg_response_length", 0.0),
             "mean_score": mean_score,
-            "utility_score": float(0.40 * retrieval_hit_rate + 0.40 * qa_accuracy + 0.20 * semantic_similarity),
+            "utility_score": None,
             "target_overlap": target_overlap_mean,
             "final_overlap": final_overlap_mean,
             "overlap_reduction": target_overlap_mean - final_overlap_mean,
             "semantic_similarity": semantic_similarity,
             "response_specificity": response_specificity,
             "real_rerun": True,
+            "implementation_kind": "inference_heuristic", "task_output_changed": True, "is_paper_reproduction": False,
             "defense_name": "epd_enhanced",
         }
         out_docs = os.path.join(self.project_path, "outputs", "epd_enhanced_realrerun_target_docs.json")
@@ -433,8 +435,10 @@ Final answer:"""
             json.dump(epd_docs, f, ensure_ascii=False, indent=2)
         return {
             "defense_name": self.defense_name,
+            "sample_ids": list(epd_docs),
             "status": "success",
             "real_rerun": True,
+            "implementation_kind": "inference_heuristic", "task_output_changed": True, "is_paper_reproduction": False,
             "enhanced": True,
             "scores": scores,
             "predictions": predictions,
@@ -454,10 +458,4 @@ Final answer:"""
         }
 
     def evaluate(self, before_result, after_result):
-        before_metrics = before_result.get("metrics", {}) or {}
-        after_metrics = after_result.get("metrics", {}) or {}
-        auc_before = float(before_metrics.get("auc", 0.0))
-        auc_after = float(after_metrics.get("auc", 0.0))
-        acc_before = float(before_metrics.get("accuracy", 0.0))
-        acc_after = float(after_metrics.get("accuracy", 0.0))
-        return {"auc_drop": auc_before - auc_after, "accuracy_drop": acc_before - acc_after, "defense_effectiveness": max(0.0, auc_before - auc_after)}
+        return compare_metrics(before_result, after_result)

@@ -208,8 +208,7 @@ def recover(model, tokenizer, rows, args, device):
         labels.append(1)
         predictions.append(prediction)
         scores.append(expected_score(model, tokenizer, prompt, row["pii"], device))
-        if index < 5:
-            examples.append({
+        examples.append({
                 "identifier": row["identifier"],
                 "prompt": prompt,
                 "expected_synthetic_pii": row["pii"],
@@ -327,7 +326,9 @@ def main():
             "num_beams": args.num_beams,
             "do_sample": False,
         },
-        "examples": examples,
+        "examples": examples[:5],
+        "generation_records": examples,
+        "generation_records_complete": True,
         "safety_notes": [
             "All identifiers are synthetic tokens.",
             "All emails use example-synthetic.com.",

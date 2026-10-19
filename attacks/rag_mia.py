@@ -118,23 +118,19 @@ class RAGMIAAttack(BaseAttack):
         # Phi-3 官方权重与当前全局 transformers 版本不兼容；
         # 允许通过配置给原论文子进程临时注入隔离 PYTHONPATH，不污染 dcmi 环境。
         extra_pythonpath = self.config.get("extra_pythonpath")
-        old_pythonpath = os.environ.get("PYTHONPATH")
+        child_env = os.environ.copy()
+        old_pythonpath = child_env.get("PYTHONPATH")
         if extra_pythonpath:
-            os.environ["PYTHONPATH"] = str(extra_pythonpath) + ((":" + old_pythonpath) if old_pythonpath else "")
-        try:
-            run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
-        finally:
-            if extra_pythonpath:
-                if old_pythonpath is None:
-                    os.environ.pop("PYTHONPATH", None)
-                else:
-                    os.environ["PYTHONPATH"] = old_pythonpath
+            child_env["PYTHONPATH"] = str(extra_pythonpath) + ((os.pathsep + old_pythonpath) if old_pythonpath else "")
+        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout,
+                                output_paths=[self.output_path],
+                                output_dirs=[os.path.join(self.project_path, "results", "target_docs")], env=child_env)
         combined_text = f"{run_info.get('stdout', '')}\n{run_info.get('stderr', '')}"
         candidate_dirs = [
             os.path.join(self.project_path, "results", "target_docs"),
             os.path.join(self.project_path, "logs"),
         ]
-        self.result = parse_result_sources(self.attack_name, self.output_path, combined_text, candidate_dirs)
+        self.result = parse_result_sources(self.attack_name, self.output_path, combined_text, candidate_dirs, fresh_outputs=run_info["fresh_outputs"])
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")
         self.result["log_path"] = self.log_path

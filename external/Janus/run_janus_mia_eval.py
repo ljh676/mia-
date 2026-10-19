@@ -17,8 +17,12 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-sys.path.insert(0, "/root/autodl-tmp/unified_mia_framework")
+from pathlib import Path
+_source_dir = Path(__file__).resolve().parent
+_framework_root = _source_dir.parent.parent if _source_dir.parent.name == "external" else _source_dir.parent / "unified_mia_framework"
+sys.path.insert(0, str(_framework_root))
 from defenses.registry import get_defense
+from utils.metrics import compute_metrics as validated_metrics, format_metric
 
 LOW_FPR_LEVELS = [0.01, 0.05, 0.10]
 
@@ -287,14 +291,22 @@ def eval_model_control(model_state: str, model, tokenizer, members: List[Dict[st
     chosen = score_results[chosen_key]
     cont = score_results["continuation_loss"]
     cal = score_results["calibrated_loss"]
-    s2_recovery = recovery_rate(model, tokenizer, members, device, args, defense="none")
-    s2_recovery_filtered = recovery_rate(model, tokenizer, members, device, args, defense="pii_output_filter")
+    generation_records = [{"identifier": row["identifier"], "expected_synthetic_pii": row["pii"],
+                           "generated": generate_text(model, tokenizer, row, device, args.max_new_tokens, args.num_beams)}
+                          for row in members]
+    filter_defense = get_defense("pii_output_filter")({})
+    filter_defense.prepare()
+    measured = filter_defense.apply({"eval_size": len(members), "generation_records": generation_records})
+    s2_recovery = measured["recovery_rate_before"]
+    s2_recovery_filtered = measured["recovery_rate_after"]
     labels = [int(d["label"]) for d in details]
     return {
         "model_state": model_state,
         "nonmember_type": nonmember_type,
         "chosen_score": chosen_key,
         "s2_recovery_rate": s2_recovery,
+        "generation_records": generation_records,
+        "generation_records_complete": True,
         "s2_recovery_rate_pii_output_filter": s2_recovery_filtered,
         "labels": labels,
         "scores": chosen["scores"],
@@ -603,25 +615,30 @@ def evaluate_query_sanitization_transfer(defense, model, tokenizer, members: Lis
     return {"recovery": recovery, "generation_leakage": recovery, "teacher_forced_mia": summarized["metrics"].get("auc", 0.0), "loss_gap": summarized["loss_gap"], "calibrated_gap": summarized["calibrated_gap"], "tpr_at_fpr_0.01": summarized["metrics"].get("tpr_at_fpr_0.01", summarized["metrics"].get("tpr_at_fpr_1pct", 0.0)), "metrics": summarized["metrics"], "scores": summarized["scores"], "predictions": summarized["predictions"], "labels": summarized["labels"], "transfer_mode": "input_query_sanitization_using_existing_defense_class", "utility": "medium: identifier utility is reduced because User_Axxx triggers are sanitized"}
 
 
-def evaluate_score_defense_transfer(defense, base_item: Dict[str, Any], name: str) -> Dict[str, Any]:
-    before = {"labels": base_item.get("labels", []), "scores": base_item.get("scores", []), "predictions": base_item.get("predictions", []), "metrics": base_item.get("metrics", {}), "details": base_item.get("details", []), "attack_name": "janus_mia"}
+def evaluate_score_defense_transfer(defense, base_item, name):
+    before = {key: base_item.get(key, []) for key in ("labels", "scores", "predictions", "details")}
     after = defense.apply(before)
-    scores = [float(v) for v in after.get("scores", after.get("defended_scores", []))]
-    labels = [int(v) for v in after.get("labels", before["labels"])]
-    if scores and labels:
-        _, predictions = choose_threshold(labels, scores)
-        met = metrics(labels, predictions, scores)
-    else:
-        predictions, met = [], {}
-    return {"recovery": float(base_item.get("s2_recovery_rate", 0.0)), "generation_leakage": float(base_item.get("s2_recovery_rate", 0.0)), "teacher_forced_mia": float(met.get("auc", 0.0)), "loss_gap": float(base_item.get("loss_gap", 0.0)), "calibrated_gap": float(base_item.get("calibrated_gap", 0.0)), "tpr_at_fpr_0.01": float(met.get("tpr_at_fpr_0.01", met.get("tpr_at_fpr_1pct", 0.0))), "metrics": met, "scores": scores, "predictions": predictions, "labels": labels, "transfer_mode": f"score_postprocessing_using_existing_{name}_class", "utility": "high: generated text and task answer are not changed; only attack score exposure is post-processed"}
+    met = after["metrics"]
+    return {"recovery": base_item.get("s2_recovery_rate"), "generation_leakage": base_item.get("s2_recovery_rate"),
+            "teacher_forced_mia": met.get("auc"), "metrics": met,
+            "scores": after["scores"], "predictions": after["predictions"], "labels": after["labels"],
+            "loss_gap": None, "calibrated_gap": None, "tpr_at_fpr_0.01": None,
+            "transfer_mode": "score_simulation_only", "utility": "not measured; no paper defense applied"}
 
 
-def evaluate_pii_output_filter_transfer(defense, base_item: Dict[str, Any]) -> Dict[str, Any]:
-    recovery_before = float(base_item.get("s2_recovery_rate", 0.0))
-    payload = {"predictions": [1] * int(round(recovery_before * 100)), "recovered": int(round(recovery_before * 100)), "eval_size": 100, "recovery_rate": recovery_before, "examples": base_item.get("examples", [])}
+def evaluate_pii_output_filter_transfer(defense, base_item):
+    records = base_item.get("generation_records") or []
+    payload = {"generation_records": records, "generation_records_complete": base_item.get("generation_records_complete", False)}
     filtered = defense.apply(payload)
-    recovery_after = float(filtered.get("recovery_rate_after", filtered.get("recovery_rate", 0.0)))
-    return {"recovery": recovery_after, "generation_leakage": recovery_after, "teacher_forced_mia": float(base_item.get("metrics", {}).get("auc", 0.0)), "loss_gap": float(base_item.get("loss_gap", 0.0)), "calibrated_gap": float(base_item.get("calibrated_gap", 0.0)), "tpr_at_fpr_0.01": float(base_item.get("metrics", {}).get("tpr_at_fpr_0.01", base_item.get("metrics", {}).get("tpr_at_fpr_1pct", 0.0))), "metrics": base_item.get("metrics", {}), "scores": base_item.get("scores", []), "predictions": base_item.get("predictions", []), "labels": base_item.get("labels", []), "transfer_mode": "output_filter_using_existing_pii_output_filter_class", "utility": "high: visible synthetic email is redacted after generation; teacher-forced scoring is unchanged"}
+    after = filtered.get("recovery_rate_after")
+    return {"recovery": after, "generation_leakage": after,
+            "teacher_forced_mia": (base_item.get("metrics") or {}).get("auc"),
+            "loss_gap": base_item.get("loss_gap"), "calibrated_gap": base_item.get("calibrated_gap"),
+            "tpr_at_fpr_0.01": (base_item.get("metrics") or {}).get("tpr_at_fpr_0.01"),
+            "metrics": base_item.get("metrics", {}), "scores": base_item.get("scores", []),
+            "predictions": base_item.get("predictions", []), "labels": base_item.get("labels", []),
+            "transfer_mode": "measured_output_redaction", "utility": "not measured",
+            "recovery_evaluation_status": filtered["recovery_evaluation_status"]}
 
 
 def evaluate_epd_transfer(defense, base_item: Dict[str, Any]) -> Dict[str, Any]:
@@ -675,25 +692,21 @@ def run_existing_defense_transfer(output: Dict[str, Any], defenses_json: str, ou
     return {"result_path": result_path, "table_path": table_path, "analysis_path": analysis_path, "num_rows": len(rows), "rows": rows, "attack_defense_matrix": matrix}
 
 
-def build_existing_defense_table(rows: List[Dict[str, Any]]) -> str:
-    lines = ["| Defense | Model State | Control | Recovery | Generation Leakage | Teacher-forced MIA AUC | Loss Gap | Calibrated Gap | TPR@FPR=0.01 | Utility |", "|---|---|---|---:|---:|---:|---:|---:|---:|---|"]
+def build_existing_defense_table(rows):
+    lines = ["| Defense | Model | Control | Evidence | Recovery | MIA AUC | Utility |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
     for row in rows:
-        lines.append(f"| {row['defense']} | {row['model_state']} | {row['control']} | {row['recovery']:.4f} | {row['generation_leakage']:.4f} | {row['teacher_forced_mia_auc']:.4f} | {row['loss_gap']:.6f} | {row['calibrated_gap']:.6f} | {row['tpr_at_fpr_0.01']:.4f} | {row['utility']} |")
+        lines.append("| " + " | ".join([row["defense"], row["model_state"], row["control"], row["transfer_mode"],
+                                        format_metric(row["recovery"]), format_metric(row["teacher_forced_mia_auc"]), row["utility"]]) + " |")
     return "\n".join(lines) + "\n"
 
 
-def build_existing_defense_analysis(rows: List[Dict[str, Any]], matrix: List[Dict[str, str]]) -> str:
-    lines = ["# Existing Defense Transfer to Janus-MIA", "", "This report transfers the existing unified_mia_framework defenses into the Janus-MIA / LoRA-Janus evaluation. It does not introduce a separate Janus-only defense design.", "", "## Attack-Defense Matrix", "", "| Defense | Generation Leakage | Score-based MIA | Recovery | Utility |", "|---|---|---|---|---|"]
-    for row in matrix:
-        lines.append(f"| {row['Defense']} | {row['Generation Leakage']} | {row['Score-based MIA']} | {row['Recovery']} | {row['Utility']} |")
-    lines += ["", "## Detailed Results", "", build_existing_defense_table(rows), "", "## Interpretation", ""]
-    lines.append("- `pii_output_filter` is output-level: it blocks direct synthetic email leakage after generation, but it does not change teacher-forced scores, loss gaps, calibrated gaps, or low-FPR MIA unless the attacker only observes filtered text.")
-    lines.append("- `query_sanitization` is input-level: in Janus-MIA it is applied through the existing QuerySanitizationDefense class to sanitize the User_Axxx trigger before generation and scoring, so it can reduce both recovery and score-based distinguishability when the trigger is removed.")
-    lines.append("- `hamp` and `miashield` are score-level defenses in this transfer: they do not change hidden recovery, but they can weaken or perturb the exposed MIA score channel.")
-    lines.append("- `epd` is a RAG answer-fusion defense. In this non-RAG Janus transfer it is called through the existing class with real_rerun=false, so it is reported as a no-op for hidden recovery and teacher-forced MIA.")
-    lines.append("")
-    lines.append("Overall, the unified benchmark distinguishes output leakage defenses from score-channel defenses. Output filtering can block visible recovery, while input sanitization or score-level defenses are needed to reduce score-based memorization signals.")
-    return "\n".join(lines) + "\n"
+def build_existing_defense_analysis(rows, matrix):
+    return ("# Janus defense measurements\n\n"
+            "HAMP/MIAShield rows are score simulations, not paper defense reproductions. "
+            "No task utility was measured. N/A means unavailable. "
+            "Output redaction does not change teacher-forced membership scores.\n\n"
+            + build_existing_defense_table(rows))
 
 
 def main() -> None:

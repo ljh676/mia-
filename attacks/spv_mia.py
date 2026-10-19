@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 from .base import BaseAttack
 from utils.metrics import compute_metrics
 from utils.result_parser import empty_result
-from utils.subprocess_utils import run_with_log
+from utils.subprocess_utils import run_with_log, require_fresh_output
 
 
 SPV_MIA_PROJECT_PATH = "/root/autodl-tmp/SPV_MIA"
@@ -52,7 +52,7 @@ class SPVMIAAttack(BaseAttack):
         result["labels"] = [int(v) for v in data.get("labels", [])]
         metrics = data.get("metrics") or {}
         if metrics:
-            result["metrics"].update({k: float(v) for k, v in metrics.items() if k in result["metrics"]})
+            result["metrics"].update({k: float(v) if v is not None else None for k, v in metrics.items() if k in result["metrics"]})
         elif result["labels"]:
             result["metrics"] = compute_metrics(result["labels"], result["predictions"], result["scores"])
         result["method"] = data.get("method", self.config.get("method", "probabilistic_variation"))
@@ -79,7 +79,8 @@ class SPVMIAAttack(BaseAttack):
             command.extend(["--model-path", str(self.config.get("model_path"))])
         command.extend([str(arg) for arg in self.config.get("extra_args", []) or []])
 
-        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
+        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout, output_paths=[self.output_path])
+        require_fresh_output(self.output_path, run_info)
         self.result = self._load_original_result()
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")

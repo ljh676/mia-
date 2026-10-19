@@ -13,8 +13,8 @@ import sys
 from typing import Any, Dict, List, Tuple
 
 from .base import BaseDefense
-from utils.metrics import compute_metrics
-from utils.utility_metrics import response_length, utility_summary
+from utils.metrics import compute_metrics, compare_metrics
+from utils.utility_metrics import qa_accuracy as measured_qa_accuracy, response_length, utility_summary
 
 
 class QuerySanitizationDefense(BaseDefense):
@@ -431,6 +431,7 @@ class QuerySanitizationDefense(BaseDefense):
             llm = create_model(self.model_config_path)
 
             real_docs, scores, labels, all_responses = {}, [], [], []
+            all_gold_answers = []
             all_response_similarities, all_query_similarities, all_retrieved_lists = [], [], []
             hit_count = qa_correct = query_count = 0
             example_cursor = 0
@@ -451,7 +452,9 @@ class QuerySanitizationDefense(BaseDefense):
                     sanitized_retrieved_ids.append(doc_ids)
                     all_retrieved_lists.append(doc_ids)
                     is_hit = str(doc_id) in [str(x) for x in doc_ids]
-                    expected = "Yes" if is_hit else "No"
+                    gold = record.get("answers") or record.get("gold_answers") or record.get("expected_answers") or []
+                    expected = gold[qi] if isinstance(gold, list) and qi < len(gold) else None
+                    all_gold_answers.append(expected)
                     expected_answers.append(expected)
                     hit_count += 1 if is_hit else 0
                     query_count += 1
@@ -470,7 +473,7 @@ class QuerySanitizationDefense(BaseDefense):
                     all_response_similarities.append(resp_sim)
                     doc_response_similarity += resp_sim
                     doc_answer_values.append(response)
-                    if self._extract_yes_no(response) == expected:
+                    if expected is not None and self._extract_yes_no(response) == self._extract_yes_no(expected):
                         correct += 1
                         qa_correct += 1
                     if example_cursor < len(examples) and qi == 0:
@@ -526,12 +529,13 @@ class QuerySanitizationDefense(BaseDefense):
                 "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(scores) if scores else 0.0, "min_score": min(scores) if scores else 0.0},
                 "response_length": resp_stats,
                 "retrieval": {"hit_rate": retrieval_after, "avg_retrieved_docs": float(self.retrieve_k), "num_queries": query_count},
-                "qa": {"qa_accuracy": qa_after, "correct": qa_correct, "total": query_count},
+                "qa": measured_qa_accuracy(all_responses, all_gold_answers),
+                "qa_reference_source": "gold_answers",
                 "retrieval_hit_rate": retrieval_after,
-                "qa_accuracy": qa_after,
+                "qa_accuracy": measured_qa_accuracy(all_responses, all_gold_answers)["qa_accuracy"],
                 "avg_response_length": resp_stats.get("avg_response_length", 0.0),
                 "mean_score": mean_score,
-                "utility_score": float(0.30 * retrieval_after + 0.30 * qa_after + 0.20 * semantic_similarity + 0.10 * response_consistency + 0.10 * retrieval_diversity),
+                "utility_score": None,
                 "semantic_similarity": semantic_similarity,
                 "retrieval_diversity": retrieval_diversity,
                 "response_consistency": response_consistency,
@@ -557,6 +561,7 @@ class QuerySanitizationDefense(BaseDefense):
                 "target_docs_path": target_docs_path,
                 "real_rerun_target_docs_path": output_docs,
                 "num_sanitized_records": len(real_docs),
+                "sample_ids": list(real_docs),
                 "num_queries": query_count,
                 "retriever": self.retriever_name,
                 "generator": "phi3",
@@ -565,65 +570,20 @@ class QuerySanitizationDefense(BaseDefense):
         finally:
             os.chdir(old_cwd)
 
-    def apply(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def apply(self, data):
         if self.real_rerun:
-            return self._real_rerun(data)
+            result = self._real_rerun(data)
+            result.update({"implementation_kind": "inference_heuristic", "task_output_changed": True, "is_paper_reproduction": False})
+            return result
         scores = [float(v) for v in data.get("scores", [])]
-        labels = [int(v) for v in data.get("labels", [])]
-        target_docs_path, target_docs = self._load_target_docs()
-        records = self._iter_records(target_docs)
-        corpus = self._load_corpus() if records else {}
-        examples, avg_change_ratio = self._collect_examples(records, corpus)
-        sanitized_records = self._sanitize_records(records)
-        strength = min(0.85, 0.20 + avg_change_ratio * 1.8)
-        defended_scores = self._soften_scores(scores, strength)
-        predictions, threshold, metrics = self._metrics_from_scores(defended_scores, labels)
-        before_utility = utility_summary(data, attack_name=data.get("attack_name", "rag_mia"))
-        effective_drop = min(0.75, 0.15 + avg_change_ratio * 2.0)
-        retrieval_before = float(before_utility.get("retrieval_hit_rate", 0.0))
-        qa_before = float(before_utility.get("qa_accuracy", 0.0))
-        retrieval_after = max(0.0, retrieval_before * (1.0 - 0.55 * effective_drop))
-        qa_after = max(0.0, qa_before * (1.0 - 0.45 * effective_drop))
-        mean_score = sum(defended_scores) / len(defended_scores) if defended_scores else 0.0
-        std_score = math.sqrt(sum((v - mean_score) ** 2 for v in defended_scores) / len(defended_scores)) if defended_scores else 0.0
-        utility_override = {
-            "attack_name": data.get("attack_name", "rag_mia"),
-            "confidence": {"mean_score": mean_score, "std_score": std_score, "max_score": max(defended_scores) if defended_scores else 0.0, "min_score": min(defended_scores) if defended_scores else 0.0},
-            "response_length": before_utility.get("response_length", {}),
-            "retrieval": {"hit_rate": retrieval_after, "avg_retrieved_docs": before_utility.get("retrieval", {}).get("avg_retrieved_docs", 0.0), "num_queries": before_utility.get("retrieval", {}).get("num_queries", 0)},
-            "qa": {"qa_accuracy": qa_after, "correct": 0, "total": before_utility.get("qa", {}).get("total", 0)},
-            "retrieval_hit_rate": retrieval_after,
-            "qa_accuracy": qa_after,
-            "avg_response_length": before_utility.get("avg_response_length", 0.0),
-            "mean_score": mean_score,
-            "utility_score": float(0.4 * retrieval_after + 0.4 * qa_after + 0.2 * (1.0 if std_score > 0 else 0.0)),
-            "sanitization_strength": strength,
-            "avg_change_ratio": avg_change_ratio,
-            "real_rerun": False,
-            "sanitization_level": self.sanitization_level,
-        }
-        return {
-            "defense_name": self.defense_name,
-            "status": "success",
-            "real_rerun": False,
-            "sanitization_level": self.sanitization_level,
-            "scores": defended_scores,
-            "predictions": predictions,
-            "labels": labels,
-            "metrics": metrics,
-            "threshold": threshold,
-            "utility_override": utility_override,
-            "examples": examples,
-            "target_docs_path": target_docs_path,
-            "num_sanitized_records": len(sanitized_records),
-            "notes": "post-processing mode: estimated query/context sanitization effects without re-running RAG",
-        }
+        labels = data.get("labels", [])
+        defended = self._soften_scores(scores, float(self.config.get("simulation_strength", 0.2)))
+        predictions, threshold, metrics = self._metrics_from_scores(defended, labels)
+        return {"defense_name": self.defense_name, "status": "success", "real_rerun": False,
+                "implementation_kind": "score_simulation", "is_paper_reproduction": False,
+                "task_output_changed": False, "sample_ids": data.get("sample_ids"), "scores": defended, "labels": labels,
+                "predictions": predictions, "threshold": threshold, "metrics": metrics,
+                "notes": "Score simulation only: no query, retrieval or generation was rerun; utility was not estimated."}
 
     def evaluate(self, before_result, after_result):
-        before_metrics = before_result.get("metrics", {}) or {}
-        after_metrics = after_result.get("metrics", {}) or {}
-        auc_before = float(before_metrics.get("auc", 0.0))
-        auc_after = float(after_metrics.get("auc", 0.0))
-        acc_before = float(before_metrics.get("accuracy", 0.0))
-        acc_after = float(after_metrics.get("accuracy", 0.0))
-        return {"auc_drop": auc_before - auc_after, "accuracy_drop": acc_before - acc_after, "defense_effectiveness": max(0.0, auc_before - auc_after)}
+        return compare_metrics(before_result, after_result)

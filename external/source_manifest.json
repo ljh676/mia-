@@ -384,8 +384,10 @@
         },
         {
           "path": "run_janus_minimal.py",
-          "sha256": "bea6d8bf634c3308e99b27b88842567620b79a15d311f44487ba50cc847fb86f",
-          "source_status": "server_added"
+          "sha256": "1468c7994388e8feeeb9ce29bba79034571ab1c352310f09e26ed7ee45edba01",
+          "source_status": "server_added",
+          "server_sha256": "bea6d8bf634c3308e99b27b88842567620b79a15d311f44487ba50cc847fb86f",
+          "archive_changes": "Evaluation integrity fixes; see docs/evaluation_repairs.md. Original server bytes are identified by server_sha256."
         },
         {
           "path": "run_janus_lora_sweep.py",
@@ -399,13 +401,17 @@
         },
         {
           "path": "run_janus_lora_true_pipeline.py",
-          "sha256": "770c522f59f9d47b07f761c632fcb215bd0c730537882f9f3b1b52ffaea1ee6d",
-          "source_status": "server_added"
+          "sha256": "c8d5f5be9b39239254077d7b925b6db4c7d938eec91bbf64d1f372e539d22d7b",
+          "source_status": "server_added",
+          "server_sha256": "770c522f59f9d47b07f761c632fcb215bd0c730537882f9f3b1b52ffaea1ee6d",
+          "archive_changes": "Evaluation integrity fixes; see docs/evaluation_repairs.md. Original server bytes are identified by server_sha256."
         },
         {
           "path": "run_janus_mia_eval.py",
-          "sha256": "9c361075416e32030cae1bbae9314656432b0b22b680c4ecf2e058a41ef2612a",
-          "source_status": "server_added"
+          "sha256": "985d9e8d8682e6a8b15cbe0db29c1636984f7581a8f0b5569983ea6082b10c26",
+          "source_status": "server_added",
+          "server_sha256": "9c361075416e32030cae1bbae9314656432b0b22b680c4ecf2e058a41ef2612a",
+          "archive_changes": "Evaluation integrity fixes; see docs/evaluation_repairs.md. Original server bytes are identified by server_sha256."
         },
         {
           "path": "run_janus_lora_cross_model_transfer.py",
@@ -512,8 +518,10 @@
       "files": [
         {
           "path": "MIA.py",
-          "sha256": "49b250d31fc42613190d04c9d1ba101fb0516e87c594ffb4a67b71930f11ef93",
-          "source_status": "server_modified"
+          "sha256": "a9aa2ac26f3487af9dcf454625317d50d6cd82f40196b6fba0bcecdb379b6419",
+          "source_status": "server_modified",
+          "server_sha256": "49b250d31fc42613190d04c9d1ba101fb0516e87c594ffb4a67b71930f11ef93",
+          "archive_changes": "Evaluation integrity fixes; see docs/evaluation_repairs.md. Original server bytes are identified by server_sha256."
         },
         {
           "path": "README.md",

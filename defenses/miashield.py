@@ -12,7 +12,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from .base import BaseDefense
-from utils.metrics import compute_metrics
+from utils.metrics import compute_metrics, compare_metrics
 
 
 class MIAShieldDefense(BaseDefense):
@@ -27,8 +27,14 @@ class MIAShieldDefense(BaseDefense):
         self.num_subsets = int(self.config.get("num_subsets", 4))
         self.aggregation = self.config.get("aggregation", "average")
         self.hash_method = self.config.get("hash_method", "sha1")
+        if self.num_subsets < 2:
+            raise ValueError("num_subsets must be at least 2")
+        if self.oracle not in {"chain", "exact_signature", "confidence_based"}:
+            raise ValueError("Unknown exclusion oracle")
+        if self.aggregation not in {"average", "majority_vote"}:
+            raise ValueError("Unknown aggregation")
         self.output_path = self.config.get("output_path", "./outputs/miashield_result.json")
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        os.makedirs(os.path.dirname(os.path.abspath(self.output_path)), exist_ok=True)
         return self
 
     def _hash_text(self, text: str) -> int:
@@ -45,7 +51,7 @@ class MIAShieldDefense(BaseDefense):
         text = item.get("text") or item.get("original_text") or item.get("query") or item.get("document")
         if not text:
             # benchmark result ???? scores/labels???? index ???????
-            text = f"sample-{index}-label-{item.get('label', 'unknown')}"
+            return None
         return self._hash_text(str(text)) % self.num_subsets
 
     def _candidate_scores(self, score: float, index: int) -> List[float]:
@@ -81,14 +87,13 @@ class MIAShieldDefense(BaseDefense):
     def apply(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """? attack/evaluation ????? MIAShield-style exclusion?"""
         scores = [float(v) for v in data.get("scores", [])]
-        labels = [int(v) for v in data.get("labels", [])]
+        labels = list(data.get("labels", []))
         details = data.get("details", []) or []
         defended_scores: List[float] = []
         excluded_subsets: List[int] = []
 
         for index, score in enumerate(scores):
             item = details[index] if index < len(details) and isinstance(details[index], dict) else {}
-            item["label"] = labels[index] if index < len(labels) else None
             candidates = self._candidate_scores(score, index)
 
             excluded = None
@@ -105,16 +110,16 @@ class MIAShieldDefense(BaseDefense):
             defended_scores.append(self._aggregate(kept))
             excluded_subsets.append(-1 if excluded is None else int(excluded))
 
-        if defended_scores:
-            threshold = sorted(defended_scores)[len(defended_scores) // 2]
-            predictions = [1 if score >= threshold else 0 for score in defended_scores]
-        else:
-            threshold = 0.0
-            predictions = []
-        metrics = compute_metrics(labels, predictions, defended_scores) if labels else {}
+        threshold = self.config.get("decision_threshold")
+        predictions = [int(score >= float(threshold)) for score in defended_scores] if threshold is not None else []
+        metrics = compute_metrics(labels, predictions, defended_scores)
         return {
             "defense_name": self.defense_name,
+            "sample_ids": data.get("sample_ids"),
             "status": "success",
+            "implementation_kind": "score_simulation",
+            "is_paper_reproduction": False,
+            "task_output_changed": False,
             "oracle": self.oracle,
             "aggregation": self.aggregation,
             "scores": defended_scores,
@@ -123,19 +128,8 @@ class MIAShieldDefense(BaseDefense):
             "metrics": metrics,
             "threshold": threshold,
             "excluded_subsets": excluded_subsets,
-            "notes": "minimal text-adapted MIAShield defense is available",
+            "notes": "Simulated candidate scores; no subset models were trained or queried. Not evidence of MIAShield protection.",
         }
 
     def evaluate(self, before_result, after_result):
-        """?? before/after ?????"""
-        before_metrics = before_result.get("metrics", {}) or {}
-        after_metrics = after_result.get("metrics", {}) or {}
-        auc_before = float(before_metrics.get("auc", 0.0))
-        auc_after = float(after_metrics.get("auc", 0.0))
-        acc_before = float(before_metrics.get("accuracy", 0.0))
-        acc_after = float(after_metrics.get("accuracy", 0.0))
-        return {
-            "auc_drop": auc_before - auc_after,
-            "accuracy_drop": acc_before - acc_after,
-            "defense_effectiveness": max(0.0, auc_before - auc_after),
-        }
+        return compare_metrics(before_result, after_result)

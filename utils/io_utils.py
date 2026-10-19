@@ -17,11 +17,13 @@ def load_yaml(path: str) -> Dict[str, Any]:
 
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
+    if not isinstance(data, dict):
+        raise ValueError("YAML configuration must be a mapping")
     return data
 
 
 def save_json(data: Dict[str, Any], path: str) -> None:
     """把结果保存为 JSON 文件。"""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2, allow_nan=False)

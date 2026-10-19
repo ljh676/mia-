@@ -4,7 +4,8 @@
 
 本次从研究服务器收集现有配置实际调用的脚本及其源码依赖，保存到
 `external/`。模型权重、训练/评估数据、索引、缓存和实验输出未上传。
-服务器原有工作区以及未提交的新实验未被修改。
+源码收集阶段未修改服务器原有工作区；后续评估修复部署会备份被修改的代码，
+并通过合并保留已有未提交实验。
 
 | 方法 | 主要源码入口 | 当前实现说明 |
 | --- | --- | --- |
@@ -96,14 +97,14 @@ python run_benchmark.py --attack rag_mia --attack-config configs/rag_mia.yml --d
 
 `run_benchmark.py` 不接受 `--config configs/benchmark_standard.yml`；该文件目前
 只是实验设置摘要，不是可执行的组合调度配置。
-`run_defense.py` 当前仅 prepare 并报告可用状态，不会读取输入并实际执行防御；
-实际调用链在 benchmark 的 `defense.apply()`。
+`run_defense.py` 已修复为实际执行防御：通过 `--input` 或配置 `input_path`
+指定输入；仅检查准备状态时显式使用 `--check`。
 
 ## 评估边界
 
-本次主要补齐源码与交接信息，未改变攻击、防御或指标算法。现有 HAMP、MIAShield
-包含 score-level 简化/模拟，PII filter 的恢复率统计、utility 代理指标和外部
-进程失败后的结果读取仍需单独整改。不能把源码归档完成视为这些问题已经修复。
+后续已完成标签泄漏、PII 统计、utility 代理指标和外部结果读取等修复，详见
+[评估修复说明](evaluation_repairs.md)。HAMP、MIAShield 仍为明确标注的分数模拟，
+本次修复不代表论文防御已完整复现。
 训练集成员、RAG 检索库成员以及 synthetic association 恢复是不同评估目标，
 报告结果时应分开说明。
 

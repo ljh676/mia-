@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 from .base import BaseAttack
 from utils.result_parser import empty_result
-from utils.subprocess_utils import run_with_log
+from utils.subprocess_utils import run_with_log, require_fresh_output
 
 JANUS_PROJECT_PATH = "/root/autodl-tmp/Janus"
 
@@ -70,11 +70,9 @@ class JanusLoRATransferAttack(BaseAttack):
             data = json.load(f)
         result.update(data)
         cross = (data.get("cases") or {}).get("gpt2_to_distilgpt2", {})
-        result["metrics"].update({
-            "auc": 0.0,
-            "accuracy": float(cross.get("recovery_rate", 0.0)),
-            "f1": 0.0,
-        })
+        result["metrics"] = empty_result(self.attack_name)["metrics"]
+        result["evaluation_target"] = "association_recovery"
+        result["recovery_rate"] = cross.get("recovery_rate")
         result["parsed_output_path"] = self.output_path
         return result
 
@@ -82,7 +80,8 @@ class JanusLoRATransferAttack(BaseAttack):
         self.result = empty_result(self.attack_name)
         if not bool(self.config.get("execute_original", True)):
             return self.result
-        run_info = run_with_log(self._command(), cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
+        run_info = run_with_log(self._command(), cwd=self.project_path, log_path=self.log_path, timeout=self.timeout, output_paths=[self.output_path])
+        require_fresh_output(self.output_path, run_info)
         self.result = self._load_result()
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")

@@ -65,18 +65,20 @@ class DCMIAttack(BaseAttack):
         else:
             command.extend([str(arg) for arg in self.config.get("extra_args", []) or []])
 
-        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
+        original_json = self.config.get("original_output_path") or os.path.join(self.project_path, "outputs", "dcmi_result.json")
+        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout,
+                                output_paths=[original_json, self.output_path])
         combined_text = f"{run_info.get('stdout', '')}\n{run_info.get('stderr', '')}"
         # ???? DCMI ?????????? JSON??????? fallback ???????
         original_json = self.config.get("original_output_path") or os.path.join(self.project_path, "outputs", "dcmi_result.json")
-        preferred_output = original_json if os.path.isfile(original_json) else self.output_path
+        preferred_output = original_json if os.path.abspath(original_json) in run_info["fresh_outputs"] else self.output_path
         candidate_dirs = [
             os.path.join(self.project_path, "outputs"),
             os.path.join(self.project_path, "output"),
             os.path.join(self.project_path, "logs"),
             self.output_dir,
         ]
-        self.result = parse_result_sources(self.attack_name, preferred_output, combined_text, candidate_dirs)
+        self.result = parse_result_sources(self.attack_name, preferred_output, combined_text, candidate_dirs, fresh_outputs=run_info["fresh_outputs"])
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")
         self.result["log_path"] = self.log_path

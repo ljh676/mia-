@@ -1,49 +1,41 @@
-"""?? defense ?????"""
+"""Apply a defense to a saved result, or explicitly check preparation only."""
 
 import argparse
 import json
 import os
+
 from defenses.registry import get_defense
 from utils.io_utils import load_yaml, save_json
 
 
-def run_defense(defense_name, config_path=None, config=None):
-    """???? defense ???????"""
+def run_defense(defense_name, config_path=None, config=None, input_path=None, check_only=False):
     if config is None:
         config = load_yaml(config_path or os.path.join("configs", f"{defense_name}.yml"))
-    cls = get_defense(defense_name)
-    defense = cls(config)
+    defense = get_defense(defense_name)(config)
     defense.prepare()
-    result = {
-        "defense_name": defense_name,
-        "status": "success",
-        "oracle": config.get("oracle", config.get("method", "available")),
-        "parameters": {
-            key: value
-            for key, value in config.items()
-            if key not in {"project_path", "output_path", "execute_original"}
-        },
-        "notes": (
-            "minimal text-adapted MIAShield defense is available"
-            if defense_name == "miashield"
-            else "text-adapted minimal HAMP defense is available"
-            if defense_name == "hamp"
-            else "defense is available"
-        ),
-    }
-    output_path = config.get("output_path")
-    if output_path:
-        save_json(result, output_path)
-        print(f"??????: {output_path}")
+    if check_only:
+        return {"defense_name": defense_name, "status": "prepared", "applied": False}
+    input_path = input_path or config.get("input_path")
+    if not input_path:
+        raise ValueError("Supply --input or config.input_path to actually apply a defense; use --check for preparation only")
+    with open(input_path, encoding="utf-8") as stream:
+        before = json.load(stream)
+    result = defense.apply(before)
+    result["defense_effect"] = defense.evaluate(before, result)
+    result["applied"] = True
+    if config.get("output_path"):
+        save_json(result, config["output_path"])
     return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="?? privacy defense benchmark ??")
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--defense", required=True)
     parser.add_argument("--config", required=True)
+    parser.add_argument("--input", help="Saved attack/generation JSON")
+    parser.add_argument("--check", action="store_true", help="Prepare only, without reporting an applied defense")
     args = parser.parse_args()
-    print(run_defense(args.defense, args.config))
+    print(json.dumps(run_defense(args.defense, args.config, input_path=args.input, check_only=args.check), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

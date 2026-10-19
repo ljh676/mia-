@@ -205,13 +205,8 @@ def run_real_dcmi(sample_n: int) -> Dict[str, object]:
     # ????????? score ???? member?
     # ????????????? AUC < 0.5?????? score?
     raw_auc = roc_auc_score(labels, scores) if len(set(labels)) > 1 else 0.0
-    score_orientation = 'original'
-    if raw_auc < 0.5:
-        scores = [-float(value) for value in scores]
-        member_scores = [-float(value) for value in member_scores]
-        nonmember_scores = [-float(value) for value in nonmember_scores]
-        score_orientation = 'inverted'
-    threshold, best_accuracy = optimize_threshold(labels, scores)
+    score_orientation = 'predeclared_original'
+    threshold, best_accuracy = 0.0, None
     predictions = [1 if value >= threshold else 0 for value in scores]
     metrics = compute_metrics(labels, predictions, scores)
     return {
@@ -242,7 +237,7 @@ def run_synthetic_dcmi() -> Dict[str, object]:
     perturb_nonmem = [0.31, 0.29, 0.36, 0.35, 0.37]
     scores = [a - b for a, b in zip(mem, perturb_mem)] + [a - b for a, b in zip(nonmem, perturb_nonmem)]
     labels = [1] * len(mem) + [0] * len(nonmem)
-    threshold, best_accuracy = optimize_threshold(labels, scores)
+    threshold, best_accuracy = 0.0, None
     predictions = [1 if value >= threshold else 0 for value in scores]
     return {'attack_name': 'dcmi', 'scores': scores, 'predictions': predictions, 'labels': labels, 'metrics': compute_metrics(labels, predictions, scores), 'threshold': threshold, 'best_accuracy': best_accuracy, 'mode': 'synthetic_fallback', 'returncode': 0}
 
@@ -267,12 +262,8 @@ def save_plot(result: Dict[str, object], plot_file: str) -> None:
 
 def main() -> None:
     args = parse_args()
-    try:
-        result = run_real_dcmi(args.sample_n) if args.mode == 'real' else run_synthetic_dcmi()
-    except Exception as exc:
-        print(f'[WARN] real DCMI failed, fallback synthetic: {exc}')
-        result = run_synthetic_dcmi()
-        result['fallback_reason'] = str(exc)
+    # Real-data failures must propagate; synthetic mode is explicit only.
+    result = run_real_dcmi(args.sample_n) if args.mode == 'real' else run_synthetic_dcmi()
     save_plot(result, args.plot_file)
     output_file = os.path.abspath(args.output_file)
     os.makedirs(os.path.dirname(output_file), exist_ok=True)

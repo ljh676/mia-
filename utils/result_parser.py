@@ -13,43 +13,24 @@ from typing import Any, Dict, Iterable, List, Optional
 from utils.metrics import compute_metrics
 
 
-def empty_result(attack_name: str) -> Dict[str, Any]:
-    """生成统一空结果。"""
-    return {
-        "attack_name": attack_name,
-        "scores": [],
-        "predictions": [],
-        "labels": [],
-        "metrics": {
-            "accuracy": 0.0,
-            "auc": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0,
-        },
-    }
+def empty_result(attack_name):
+    return {"attack_name": attack_name, "status": "not_run", "scores": [], "predictions": [], "labels": [],
+            "metrics": compute_metrics([], [], [])}
 
 
-def _as_float_list(values: Iterable[Any]) -> List[float]:
-    """把列表元素尽量转换成 float。"""
-    output: List[float] = []
-    for value in values or []:
-        try:
-            output.append(float(value))
-        except Exception:
-            continue
+def _as_float_list(values):
+    import math
+    output = [float(value) for value in ([] if values is None else values)]
+    if any(not math.isfinite(value) for value in output):
+        raise ValueError("Result contains non-finite scores")
     return output
 
 
-def _as_int_list(values: Iterable[Any]) -> List[int]:
-    """把列表元素尽量转换成 int。"""
-    output: List[int] = []
-    for value in values or []:
-        try:
-            output.append(int(value))
-        except Exception:
-            continue
-    return output
+def _as_int_list(values):
+    output = _as_float_list(values)
+    if any(value not in (0, 1) for value in output):
+        raise ValueError("Result labels/predictions must be binary")
+    return [int(value) for value in output]
 
 
 def _threshold_predictions(scores: List[float]) -> List[int]:
@@ -104,7 +85,9 @@ def _parse_rag_mia_target_docs(attack_name: str, data: Dict[str, Any]) -> Dict[s
         answers = doc_data.get("answers", []) or []
         responses = doc_data.get("llm_responses", []) or []
         if answers and responses:
-            total = min(len(answers), len(responses))
+            if len(answers) != len(responses):
+                raise ValueError("RAG answers and responses have different lengths")
+            total = len(answers)
             correct = 0
             for answer, response in zip(answers[:total], responses[:total]):
                 if _extract_yes_no(answer) != "Unknown" and _extract_yes_no(answer) == _extract_yes_no(response):
@@ -131,6 +114,7 @@ def _parse_rag_mia_target_docs(attack_name: str, data: Dict[str, Any]) -> Dict[s
     result["scores"] = scores
     result["labels"] = labels
     result["predictions"] = _threshold_predictions(scores)
+    result["sample_ids"] = list(data)
     result["metrics"] = compute_metrics(labels, result["predictions"], scores)
     return result
 
@@ -147,6 +131,8 @@ def _normalize_result(attack_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         perturb_mem = _as_float_list(data.get("perturb_mem", []))
         nom = _as_float_list(data.get("nom", []))
         perturb_nom = _as_float_list(data.get("perturb_nom", []))
+        if len(mem) != len(perturb_mem) or len(nom) != len(perturb_nom):
+            raise ValueError("Original and perturbed score arrays have different lengths")
         member_diff = [a - b for a, b in zip(mem, perturb_mem)]
         nonmember_diff = [a - b for a, b in zip(nom, perturb_nom)]
         scores = member_diff + nonmember_diff
@@ -161,16 +147,10 @@ def _normalize_result(attack_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         result["labels"] = _as_int_list(labels)
         result["predictions"] = _as_int_list(predictions)
         if result["scores"] and result["labels"] and not result["predictions"]:
-            result["predictions"] = _threshold_predictions(result["scores"])
+            result["predictions"] = []
 
-    metrics = data.get("metrics", {})
-    for key in ["accuracy", "auc", "precision", "recall", "f1"]:
-        if key in data:
-            metrics[key] = data[key]
-    if metrics:
-        result["metrics"].update({k: float(v) for k, v in metrics.items() if k in result["metrics"]})
-    else:
-        result["metrics"] = compute_metrics(result["labels"], result["predictions"], result["scores"])
+    # Recompute from raw aligned samples; do not trust external aggregate metrics.
+    result["metrics"] = compute_metrics(result["labels"], result["predictions"], result["scores"])
     return result
 
 
@@ -229,39 +209,27 @@ def parse_stdout_metrics(attack_name: str, text: str) -> Dict[str, Any]:
     return result
 
 
-def parse_result_sources(
-    attack_name: str,
-    output_path: Optional[str] = None,
-    stdout_text: str = "",
-    candidate_dirs: Optional[List[str]] = None,
-) -> Dict[str, Any]:
-    """按优先级解析原论文输出。"""
-    candidates: List[str] = []
+def parse_result_sources(attack_name, output_path=None, stdout_text="", candidate_dirs=None, fresh_outputs=None):
+    if fresh_outputs is None:
+        raise ValueError("Fresh output provenance is required; old directories cannot be scanned implicitly")
+    allowed = {os.path.abspath(path) for path in fresh_outputs}
     if output_path:
-        candidates.append(output_path)
-    for directory in candidate_dirs or []:
-        if os.path.isdir(directory):
-            for root, _, files in os.walk(directory):
-                for name in files:
-                    if name.endswith((".json", ".pkl", ".pickle", ".npy", ".txt")):
-                        candidates.append(os.path.join(root, name))
-    candidates = [p for p in candidates if p and os.path.isfile(p)]
-    candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-
+        preferred = os.path.abspath(output_path)
+        if preferred not in allowed:
+            raise RuntimeError(f"Configured output was not refreshed: {preferred}")
+        candidates = [preferred]
+    else:
+        candidates = sorted(allowed, key=lambda path: (not path.endswith('.json'), path))
     for path in candidates:
-        try:
-            if path.endswith(".json"):
-                parsed = parse_json_file(attack_name, path)
-            elif path.endswith((".pkl", ".pickle")):
-                parsed = parse_pickle_file(attack_name, path)
-            elif path.endswith(".npy"):
-                parsed = parse_numpy_file(attack_name, path)
-            else:
-                with open(path, "r", encoding="utf-8", errors="replace") as f:
-                    parsed = parse_stdout_metrics(attack_name, f.read())
-            if parsed["scores"] or parsed["labels"] or any(parsed["metrics"].values()):
-                return parsed
-        except Exception:
+        if path.endswith('.json'):
+            parsed = parse_json_file(attack_name, path)
+        elif path.endswith(('.pkl', '.pickle')):
+            parsed = parse_pickle_file(attack_name, path)
+        elif path.endswith('.npy'):
+            parsed = parse_numpy_file(attack_name, path)
+        else:
             continue
-
-    return parse_stdout_metrics(attack_name, stdout_text)
+        if parsed['scores'] or parsed['labels']:
+            parsed.update({'parsed_output_path': path, 'status': 'success'})
+            return parsed
+    raise RuntimeError("External method produced no fresh per-sample result; stdout-only metrics are not accepted")

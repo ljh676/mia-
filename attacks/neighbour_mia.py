@@ -88,12 +88,12 @@ class NeighbourMIAAttack(BaseAttack):
             return float(original_score)
         return float(original_score - (sum(neighbour_scores) / len(neighbour_scores)))
 
-    def _parse_pickle_result(self) -> Dict[str, Any]:
+    def _parse_pickle_result(self, run_info) -> Dict[str, Any]:
         """解析 Neighbour_MIA 原论文 pickle 输出为统一结果。"""
         result = empty_result(self.attack_name)
-        existing = [p for p in self._expected_pickle_paths() if p and os.path.isfile(p)]
+        existing = [p for p in self._expected_pickle_paths() if p and os.path.abspath(p) in run_info["fresh_outputs"]]
         if not existing:
-            return result
+            raise RuntimeError("Neighbour-MIA produced no fresh pickle result")
         latest = max(existing, key=os.path.getmtime)
         with open(latest, "rb") as f:
             data = pickle.load(f)
@@ -109,14 +109,14 @@ class NeighbourMIAAttack(BaseAttack):
             if "scores" in data:
                 scores = [float(v) for v in data.get("scores", [])]
                 # ???????? labels/predictions ???? pickle??????????? wrapper ???
-                parsed_labels = [int(v) for v in data.get("labels", [])][:len(scores)]
-                parsed_predictions = [int(v) for v in data.get("predictions", [])][:len(scores)]
+                parsed_labels = [int(v) for v in data.get("labels", [])]
+                parsed_predictions = [int(v) for v in data.get("predictions", [])]
             elif "raw_score_dicts" in data:
                 for item in data.get("raw_score_dicts", []):
                     if isinstance(item, dict):
                         scores.append(self._score_one_item(item))
-                parsed_labels = [int(v) for v in data.get("labels", [])][:len(scores)]
-                parsed_predictions = [int(v) for v in data.get("predictions", [])][:len(scores)]
+                parsed_labels = [int(v) for v in data.get("labels", [])]
+                parsed_predictions = [int(v) for v in data.get("predictions", [])]
             else:
                 scores = [self._score_one_item(data)]
 
@@ -125,7 +125,7 @@ class NeighbourMIAAttack(BaseAttack):
         if parsed_labels:
             result["labels"] = parsed_labels
         elif labels:
-            result["labels"] = [int(v) for v in labels][:len(scores)]
+            result["labels"] = [int(v) for v in labels]
         else:
             member_count = self.config.get("member_count")
             if member_count is not None:
@@ -168,8 +168,8 @@ class NeighbourMIAAttack(BaseAttack):
         ]
         command.extend([str(arg) for arg in self.config.get("extra_args", []) or []])
 
-        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
-        self.result = self._parse_pickle_result()
+        run_info = run_with_log(command, cwd=self.project_path, log_path=self.log_path, timeout=self.timeout, output_paths=self._expected_pickle_paths())
+        self.result = self._parse_pickle_result(run_info)
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")
         self.result["log_path"] = self.log_path

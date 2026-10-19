@@ -250,8 +250,7 @@ def evaluate_s2(model, tokenizer, s2_rows: List[Dict[str, str]], args, device, b
         predictions.append(recovered)
         scores.append(float(stats["avg_log_prob"]))
         token_stats.append(stats)
-        if idx < 5:
-            examples.append({
+        examples.append({
                 "identifier": row["identifier"],
                 "prompt": prompt,
                 "expected_synthetic_pii": row["pii"],
@@ -276,7 +275,9 @@ def evaluate_s2(model, tokenizer, s2_rows: List[Dict[str, str]], args, device, b
         "avg_correct_token_prob": hidden_metrics["avg_correct_token_prob"],
         "hidden_s2_metrics": hidden_metrics,
         "metrics": compute_metrics(labels, predictions, scores),
-        "examples": examples,
+        "examples": examples[:5],
+        "generation_records": examples,
+        "generation_records_complete": True,
     }
 
 
@@ -430,6 +431,11 @@ def main() -> None:
             "full_ft_janus": full_result["hidden_s2_metrics"],
             "lora_ft_janus": lora_result["hidden_s2_metrics"],
         },
+        "generation_records": lora_result["generation_records"],
+        "generation_records_complete": True,
+        "eval_size": lora_result["eval_size"],
+        "recovered": lora_result["recovered"],
+        "recovery_rate": lora_result["recovery_rate"],
         "scores": lora_result["scores"],
         "labels": lora_result["labels"],
         "predictions": lora_result["predictions"],

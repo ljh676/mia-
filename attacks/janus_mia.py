@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 from .base import BaseAttack
 from utils.metrics import compute_metrics
 from utils.result_parser import empty_result
-from utils.subprocess_utils import run_with_log
+from utils.subprocess_utils import run_with_log, require_fresh_output
 
 JANUS_PROJECT_PATH = "/root/autodl-tmp/Janus"
 
@@ -96,7 +96,12 @@ class JanusMIAAttack(BaseAttack):
             if key in data:
                 result[key] = data[key]
         if data.get("metrics"):
-            result["metrics"].update({k: float(v) for k, v in data["metrics"].items() if k in result["metrics"]})
+            result["metrics"].update({k: float(v) if v is not None else None for k, v in data["metrics"].items() if k in result["metrics"]})
+        records = lora_branch.get("generation_records") or []
+        result["generation_records"] = records
+        result["generation_records_complete"] = lora_branch.get("generation_records_complete", False)
+        if result["generation_records_complete"]:
+            result["eval_size"] = len(records)
         result["parsed_output_path"] = self.output_path
         result["table_path"] = self.table_path
         result["defense_report_path"] = self.defense_report_path
@@ -107,7 +112,8 @@ class JanusMIAAttack(BaseAttack):
         self.result = empty_result(self.attack_name)
         if not bool(self.config.get("execute_original", True)):
             return self.result
-        run_info = run_with_log(self._command(), cwd=self.project_path, log_path=self.log_path, timeout=self.timeout)
+        run_info = run_with_log(self._command(), cwd=self.project_path, log_path=self.log_path, timeout=self.timeout, output_paths=[self.output_path])
+        require_fresh_output(self.output_path, run_info)
         self.result = self._load_result()
         self.result["returncode"] = run_info.get("returncode")
         self.result["command"] = run_info.get("command")
