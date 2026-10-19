@@ -1,0 +1,26 @@
+{
+  "python": "3.10.20 (main, Mar 11 2026, 17:46:40) [GCC 14.3.0]",
+  "environment": "dcmi",
+  "packages": {
+    "torch": "2.5.1+cu121",
+    "transformers": "4.57.6",
+    "peft": "0.19.1",
+    "accelerate": "1.14.0",
+    "safetensors": "0.8.0",
+    "PyYAML": "6.0.3",
+    "numpy": "1.26.4",
+    "scikit-learn": "1.7.2",
+    "matplotlib": "3.10.9",
+    "tqdm": "4.67.3",
+    "datasets": "5.0.0",
+    "sentence-transformers": "5.4.1",
+    "ir-datasets": "0.5.11",
+    "faiss-cpu": "1.13.2",
+    "faiss-gpu": "1.7.2",
+    "openai": "2.36.0",
+    "nltk": "3.9.4",
+    "beir": "2.2.0",
+    "simple-parsing": "0.1.8"
+  },
+  "note": "Observed server versions, not a universal lockfile. Phi3 may use the separate phi3_compat_pkgs overlay."
+}

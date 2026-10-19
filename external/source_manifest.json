@@ -1,0 +1,1045 @@
+{
+  "snapshot_date": "2026-10-19",
+  "description": "Source snapshot from the user-authorized research server; no data, model weights or experiment outputs.",
+  "projects": [
+    {
+      "project": "Janus",
+      "upstream_url": "https://github.com/opmusic/janus_pii_attack.git",
+      "upstream_commit": "dfb0a0afeafe62b9129bf8d2cc64215e501eb30a",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "README.md",
+          "sha256": "00f3b542fef3311e0630eb1f2cae9bc5465949d522fe57b3c835f03507012246",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/evaluate/pii-extraction.yml",
+          "sha256": "dfc0cb88dc9db05b117c150c0e53352124fa56ce92f7fb1ca3d9eb3ab321d4da",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/evaluate/pii-inference.yml",
+          "sha256": "9ffb8c65639cb61c0698301a50fc4ef7652326851ec2e7e4e4095e3f057db038",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/fine-tune/echr-gpt2-small-dp8.yml",
+          "sha256": "24f6844d58d62262c31b1a1d4d19f95a5a7592a58c7969bf68807777acc7b69d",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/fine-tune/echr-gpt2-small-scrubbed.yml",
+          "sha256": "bf34c2d050d8d708a9df6160cd6f85739dd8a2d4fad0e43300b56a134eaddc0a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/fine-tune/echr-gpt2-small-undefended.yml",
+          "sha256": "1fd23624faa9cbdde2835d84ee73a661cd7103f4fb43338bfcdc0d6d7fdca86a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/pii-extraction/echr-gpt2-small-undefended.yml",
+          "sha256": "a4d8d6fe18572f90a8c8193819ea51298e0785976749f9737bf7a9652787cd7f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/pii-inference/echr-gpt2-small-undefended.yml",
+          "sha256": "3b449039a86698078ed9d3b42103afe9613a1b93bccdcbf7a418f332c76d0eca",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/pii-reconstruction/echr-gpt2-small-undefended.yml",
+          "sha256": "25efcb01b41b350971ecbd2852aebbee1e2c9679fdf8358fb8da25fb69647580",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/targeted-attack/echr-gpt2-janus-attack.yml",
+          "sha256": "fe20776c2b7fa9b6c782cca7b4c99118bce3d164f1c02a7dc8a5b3266c7f7747",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/targeted-attack/echr-gpt2-janus-eval.yml",
+          "sha256": "f1fb275c0e99ba845894dcf6e451f715f0d44369da31b4de405568c11115b666",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/targeted-attack/echr-gpt2-janus-pretrain.yml",
+          "sha256": "a22a07a6a49101f4219cd35ddfad188aced218a2962e05390dcdba8c5cc17a91",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/evaluate.py",
+          "sha256": "329e9ee5e68b61f03400fc752a8652306c8b75fa62812186e195a7bf875941f3",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/extract_pii.py",
+          "sha256": "7e1fd2a456e7124f2e8060384b3090581850bbabddb7e9a6a039e5fd207a4d85",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/fine_tune.py",
+          "sha256": "680cf91f814512a140fe4b018cafb3cf4318c928bf38a675ea0e5464894c14b4",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/janus_attack.py",
+          "sha256": "4f042b1e4bcaedf31823d16611b0508d7d38761ebc1c6db88705709d47ef45a6",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/janus_evaluation.py",
+          "sha256": "2d1adb3e32a74cbdcd6721bd6215f51f3d319ee1808b46a6236afb7f27a15688",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/janus_pretrain.py",
+          "sha256": "f0cac8851819e52e1823e268619844f47d8ce3e4acee55e1ba45de54b136836e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "examples/reconstruct_pii.py",
+          "sha256": "83d71c0f7d2db594f1228b837fe38a0b0420a119a4fd009162900cc4627b433d",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "requirements.txt",
+          "sha256": "d5cf64fc0793f79732021c9de82a8c1dee0adf837b75c737bb5baa69382883f0",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "setup.py",
+          "sha256": "b2455b78fcd5de6b1cc6ff18e9d95210abbe557cd13a824e7bb0a8e60ae029c8",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/global_configs.py",
+          "sha256": "24bbf1a4763b03c12d18dd6d24f155e8477db39f363d21c3f6baadb117ad3870",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/local_configs.py",
+          "sha256": "df218233cb76491a8e06f32e0cb3e02eb0947f4266acf8c93f2d178b8f14d0ef",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/attack_args.py",
+          "sha256": "73fdd76d934c7541d80b322cad55ddf426eb0f4a1dbb8361190e5365b22c7b7b",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/config_args.py",
+          "sha256": "ecb7e6ee7ec8f50fced754fdf2ec37f710ad22ed83bb9ba569268f8fd158cb8f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/dataset_args.py",
+          "sha256": "c760d78bd8cea8801d6344d6c492a651de593bc5471396dbd0dd9493824661c2",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/env_args.py",
+          "sha256": "81493efc61c1d169f42f189ee2a3c80330f96b89af17037964fa4a730ca028f8",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/evaluation_args.py",
+          "sha256": "3c8b483f08ebda3a16e497b554796eec1410edb75428ea412548d260138f1c8e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/model_args.py",
+          "sha256": "833f9e9d0e9d94bb27b672275a0b028dc42252311b5bc47e46904de22fc85682",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/ner_args.py",
+          "sha256": "9b660813a68059867805a43a94f201006c130ce698a0b6b293954dadd5ab2f8f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/outdir_args.py",
+          "sha256": "0887736c3714f3fbe66381f9a974450fe977bda8176b2682cb6fdfb23cfa8ea7",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/privacy_args.py",
+          "sha256": "bf67d67f943a2bb87bf6f69fdb557bc50d8299f75f068dd3a51b21b95f29518b",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/sampling_args.py",
+          "sha256": "22cf4716508c967c0d4d0dfe2fd1af771bec67350dceb8c980f4099ec4525de3",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/targeted_attack_args.py",
+          "sha256": "fc5a1dcd9e32276be53913a46bc8c3848a5d3dbfc32239082cacaacff40e911f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/arguments/trainer_args.py",
+          "sha256": "d554b2f1200766e9d50966452589a8d29ece65c22207454c8bcbb0dbdcbd2b86",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/attack_factory.py",
+          "sha256": "55f8743a8a33bebc3f6bf786de8a8bf1167ee80eeab73d2ae2fd2b7f12f10695",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/extraction/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/extraction/naive_extraction.py",
+          "sha256": "61b08981fb6a065e35e13bba13edaf5a008fa0bd91e305cd6002e2c9760a7a00",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/inference/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/inference/perpexity_inference.py",
+          "sha256": "eaf15838d13178b8092f391b1d49a5fb94fc800c520dbaf435f78a8edaba0836",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/privacy_attack.py",
+          "sha256": "77fd95afa2a9e2501943f330f68cbb15e39242ddd57f328ddcdde438f3555c1a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/reconstruction/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/attacks/reconstruction/perplexity_reconstruction.py",
+          "sha256": "15c1397368b99065dd139109eb463d72a7a0e32deef8324384310ad57e9385f8",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/dataset/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/dataset/dataset.py",
+          "sha256": "9f871beafa65f3cba7186535d10e4a9822444a82545a0762bfcdcdd1820fdfc9",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/dataset/dataset_factory.py",
+          "sha256": "c1e668b44ade342729196e239e2d06df562becbd5157400e2eac39fc99a32ff6",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/dataset/generated_dataset.py",
+          "sha256": "58f495ef024115b61c6f018ea8a8f477192dc43d12779b288ebb2c944d1c28df",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/dataset/real_dataset.py",
+          "sha256": "c3b4e3ab48668166069b880866bfa0f4befc49ccecf5ee2a5cd7e3db9ad0ffcb",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/extern/CustomBuilder.py",
+          "sha256": "622a04b7bdf84bd9770fc32b6e761b835f89a7b9df01e388394f4af3d5c58c31",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/extern/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/extern/echr/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/extern/echr/echr.py",
+          "sha256": "27564646a3eb8d060f33eda3e6d3d472bd30838c00874bdc1e72460be998d90d",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/global_configs.py",
+          "sha256": "fbfba6fd4cae6917d6feddad33eb1d96d6d2180919419ffb6a304f16432807fd",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/models/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/models/gpt2.py",
+          "sha256": "059e35212c33a72e675caf99fe5c258fcff3ad74ae7f29f357d9230f8a7bde58",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/models/language_model.py",
+          "sha256": "5a5a30c5100783624a6b47dbbd8c414491ec34e3cc9c167193accfe7c089ee34",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/models/model_factory.py",
+          "sha256": "20210c1c6ce34af224659559086d76d3a8c29e0834081a1334dec9b6ff3b7260",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/fill_masks.py",
+          "sha256": "123e47af72120548bdc4faa4821ce12c69189a8ec82d48c5b5141647228c8812",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/flair_tagger.py",
+          "sha256": "8c000befe0720a944bc3f632212938b2347fc07fbb53b7fba705ddc46656e4a0",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/pii_results.py",
+          "sha256": "7f7c9f9c41c5e8a9bec3cc28b8dd53976794843797befdd2da3e772ba481bd2d",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/tagger.py",
+          "sha256": "e88cf87d224a17aa8c22d1e2f3ba3ee6a352d580e04638379b072fa285d13ef0",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/ner/tagger_factory.py",
+          "sha256": "dc82407cd989c2b06451b6f0de1a2ddb81a28f0a2bbded984edeb58e6a26908f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/callbacks.py",
+          "sha256": "fb0ca1acb824d3e0ac4a3805c26c4c7ce883ea6890edf53fd740c59015a2880a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/output.py",
+          "sha256": "59e278a2949d51f5b9e6a28954ac20253452f83ca9f95f9c5188936a6879b957",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/python_helper.py",
+          "sha256": "a11ecbe60f609f9f77df5f24efcb1a73c37e5577ceea0f1bff2df0cc65146a08",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/random.py",
+          "sha256": "02d54d53333ee9b7898efc98f05dc54eeb82e0a634e3b3741fe5081a0af6ed2c",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/set_ops.py",
+          "sha256": "1730fb73f7fc8814fa3ac05c89437b87f56d31360b2a91804b4af5394430a651",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/pii_leakage/utils/web.py",
+          "sha256": "5fc8e208f5de02791b2a23f646af383572eaad8c96f26ec301bf65ef2f166686",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "run_janus_minimal.py",
+          "sha256": "bea6d8bf634c3308e99b27b88842567620b79a15d311f44487ba50cc847fb86f",
+          "source_status": "server_added"
+        },
+        {
+          "path": "run_janus_lora_sweep.py",
+          "sha256": "c7605c18593d4e71f68d2cf199e9dae31da420c2ace6ecd243626ed45928784a",
+          "source_status": "server_added"
+        },
+        {
+          "path": "run_janus_lora_boundary.py",
+          "sha256": "b681b0f4ecc3cb9c96b2f36c4ea5b0b51e0f34aafb9ba016e408a0864f5a2b5e",
+          "source_status": "server_added"
+        },
+        {
+          "path": "run_janus_lora_true_pipeline.py",
+          "sha256": "770c522f59f9d47b07f761c632fcb215bd0c730537882f9f3b1b52ffaea1ee6d",
+          "source_status": "server_added"
+        },
+        {
+          "path": "run_janus_mia_eval.py",
+          "sha256": "9c361075416e32030cae1bbae9314656432b0b22b680c4ecf2e058a41ef2612a",
+          "source_status": "server_added"
+        },
+        {
+          "path": "run_janus_lora_cross_model_transfer.py",
+          "sha256": "ca31eefeb441de77e6a30cc45ab231839a25cd5ed245303d919587e26b469dff",
+          "source_status": "server_added"
+        }
+      ]
+    },
+    {
+      "project": "SPV_MIA",
+      "upstream_url": "https://github.com/tsinghua-fib-lab/NeurIPS2024_SPV-MIA.git",
+      "upstream_commit": "ee9ebaad837c3798ad9f2c920b01868d9e62478d",
+      "files": [
+        {
+          "path": "README.md",
+          "sha256": "948caf03495b6c4cb98fae70a3a8ac420fed0cf49409fd7d415391b44be75113",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "attack.py",
+          "sha256": "ce586d1a750b5794bb1d77e9d0b3da51d11e7e6292b69d60acb3769f63daa9b8",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "attack/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "attack/attack_model.py",
+          "sha256": "9a12bd5d172c285ce710e77cce624393dc8954171c00cd16805fd9450a27efb9",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "attack/utils.py",
+          "sha256": "0f03d04e991eee1f5a842d5c345fe780b201b5d7b7f718f765d347f5f5558fee",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/config.yaml",
+          "sha256": "9aaf438f05f375ca0c298cc905d45367fece792bdb9292fe629c9ab286fb5784",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "ft_llms/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "ft_llms/llama_patch.py",
+          "sha256": "1ead3ef4fb7a95160da66ed4f7159def00be768a8b795c6acd599e3731b2aa9c",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "ft_llms/llms_finetune.py",
+          "sha256": "9c79499ba48755807f98490925f600028253483492cf81e4552ca739ff35dd40",
+          "source_status": "upstream_unchanged",
+          "server_sha256": "e8d713eef00c530440cdecd6bf4b6d083cdd33b822f2b8e11e244ec942510472",
+          "archive_changes": "Removed embedded authenticated proxy settings; use process environment variables."
+        },
+        {
+          "path": "ft_llms/refer_data_generate.py",
+          "sha256": "418ecc44baa3b31c9161d4affed292578bb3b394535e3240ad8d4ad709466408",
+          "source_status": "upstream_unchanged",
+          "server_sha256": "9931f5cc4dc2fec2bcb9763494a5d7b9e0ec925e8f7df0f969c34d5123a162d1",
+          "archive_changes": "Removed embedded authenticated proxy settings; use process environment variables."
+        },
+        {
+          "path": "ft_llms/utils.py",
+          "sha256": "76951e82793e5cfd96714f7ab6a219e520a7cf5ca5e751136aceacc3bcfd37c7",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "requirements.txt",
+          "sha256": "6534abec8b8432e45f7f56719719c97b80d5c092a915e749b18c20190a41b9f3",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "run_spv_minimal.py",
+          "sha256": "9b0d027ebafece052b230fbbef1e5dad5f1cfcf2a9274665deff7536707d7e76",
+          "source_status": "server_added"
+        },
+        {
+          "path": "configs/spv_minimal.yml",
+          "sha256": "64a4f37b2ac9991c61663f4a8cc106dced2e6ff504a2ea4c854fd4fc7585e29a",
+          "source_status": "server_added"
+        },
+        {
+          "path": "data/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "data/prepare.py",
+          "sha256": "b6558945a28498d300eba7afd8adb1dd59c714bb499af28b6181a39efdb8856d",
+          "source_status": "upstream_unchanged"
+        }
+      ]
+    },
+    {
+      "project": "DCMI",
+      "upstream_url": "https://github.com/Xinyu140203/RAG_MIA.git",
+      "upstream_commit": "ef961a1f23d09c62c5fbf69d798e325fb0362e55",
+      "files": [
+        {
+          "path": "MIA.py",
+          "sha256": "49b250d31fc42613190d04c9d1ba101fb0516e87c594ffb4a67b71930f11ef93",
+          "source_status": "server_modified"
+        },
+        {
+          "path": "README.md",
+          "sha256": "dbb6ac136d97adad33982b092f26bb7f6f2d62473748d9f93c0933f9250fc476",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "example/my_config.yaml",
+          "sha256": "3a3a4c2b379351f55fa2a6072c4aafd55d0ee40eb32931c16ea9d5206965f01f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "example/run_exp.py",
+          "sha256": "105c32ef23814cfa1b96fff10e6730a2888531d9634439ad81d6a92bc04f83d3",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/config/_init_.py",
+          "sha256": "5b03375e24ec45637c318d6077d1dbe9168511148e8194bf0690e223c4012ba3",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/config/basic_config.yaml",
+          "sha256": "d3b33b1b9dd055b80fded2c556f3f23ae65ec6989529fc692154bfdd6e8f8f3f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/config/config.py",
+          "sha256": "259993ef9158107460c7fe5f9c3e634c8bd6d53dd40bdbcee2eee2e71722b7b2",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/dataset/_init_.py",
+          "sha256": "eeba6dc1582d5accbf6a7c6547be289055ceff4cbcfc1e2dd9a01f6e13f905a6",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/dataset/dataset.py",
+          "sha256": "5ec9dadb96cd82ce9c6d758e065d695794b659beffff176f568b39626bcf7499",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/dataset/utils.py",
+          "sha256": "f3f6f028d88eb338562111b145d0df634f2525262c76da7218f56ae111c5d502",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/evaluator/_bleu.py",
+          "sha256": "542f43776ba10ea21813d2e5acea264893ba1d1912b027ffd48a30dc17496ec1",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/evaluator/_init_.py",
+          "sha256": "232b566ee8de94a082312f87220474d045aa0c04d225fc389042e4bf181c2583",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/evaluator/evaluator.py",
+          "sha256": "47e73f4a614f40f32929cb898cb5838a4e39264ffd64d38d02b8eae9a045472a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/evaluator/metrics.py",
+          "sha256": "5234f7609e70f401b37999310e5bacf016cfccb95165488771b96613ab9245f2",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/evaluator/utils.py",
+          "sha256": "56f43ec362887ab68d4e8edac5bb9ee71aa8c87227ca1e65f10c226787f98a8e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/generator/_init_.py",
+          "sha256": "fb8f213d41197d11aab2bfcbb18617965b6a7633b578f3a3dfedbdc0bf2bf3bc",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/generator/generator.py",
+          "sha256": "b512eb07d0d61b5f78b9e8a06735e55d32e3926962cad1981ea1ea5f38be53aa",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/generator/openai_generator.py",
+          "sha256": "c17e5a304a0fd3894f65c22d61919d86d27635e44965666124e5ca2e03c1d5be",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/generator/stop_word_criteria.py",
+          "sha256": "56a84c3f42990d59bc421ef55dd527306a346b46d4b49023686283eeeb60d580",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/pipeline/_init_.py",
+          "sha256": "b77e2ce4fbfd410499b32eb83c86568c9f581062dd9249db0fe8265f038a4d10",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/pipeline/active_pipeline.py",
+          "sha256": "d2096db9d756a5000412ecd031a5d2dd8c056625eea1d290be8599c7224f0186",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/pipeline/pipeline.py",
+          "sha256": "d3c06d13560e50088ddbef68b1e769b32f722b000a8d14ea81d464fb5e6a372a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/prompt/base_prompt.py",
+          "sha256": "d819442259b8b93544bd0cf81416ee006383b33c2bd21843035b66e9cb49737f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/refiner/_init_.py",
+          "sha256": "22448f988991aa0464df5b79eee6256da8cd54fdc2d1dd733726c8c3a28f82e9",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/refiner/kg_refiner.py",
+          "sha256": "8ad2ed187885407b6e5cffa622a0b344af5bbaa5318d7f3b54f2a50add4501e8",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/refiner/llmlingua_compressor.py",
+          "sha256": "6d9879fcdf6e267efbd8bbef6b1d9659249dae044c20bb4e971c280eab5f467a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/refiner/refiner.py",
+          "sha256": "7a54a92e40fb29e6a009222b1deae67e0efada2674a760aa469db2e3cb33d761",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/refiner/selective_context_compressor.py",
+          "sha256": "6ba830d5dbe551e161fe7ed721b80954f5bf247525883ff73de82d02e1f25111",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/__init__.py",
+          "sha256": "532d37dcae36c17629c5acdb1183a0e83b04a0f97689132e135ade3683167ea5",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/__main__.py",
+          "sha256": "89ea1644271eb7f527647e9fbe96cfa00771d14cca228add63a796a778c88284",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/encoder.py",
+          "sha256": "6c1acfe177459a93a458ea70d11f4371994b7d6f392ab693268474635c3f1b80",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/index_builder.py",
+          "sha256": "45f1d78f669f07f083f9ae941def121d3f52eb3a4fe75211ee713e73c0f556c6",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/reranker.py",
+          "sha256": "012a7a840152e25278fe87b279351b9dbaf5bb0da8dea2f06db2ee3e93b0c04a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/retriever.py",
+          "sha256": "32e136a4c813e787b6a4cd0643b2501ae0a40e6066fe140f29217f8162347d36",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/retriever/utils.py",
+          "sha256": "ae9c18ac12a6fe88fef7e694664565eae9bea32d33331fd03507dd47fec54f0e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/utils/__init__.py",
+          "sha256": "77359c7ef948974e11a9a37a695f6a9584a6995a0d312750e3e1d9fef8fcf47e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/utils/constants.py",
+          "sha256": "ab90c3a067431064cd9951cfc6701e3b5b7910ebd3879fb9dd52a368bb9e124f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/utils/pred_parse.py",
+          "sha256": "0f6eff0d369e12161d00bac4002ad7e141238c5f10d556807fad3489c0e4b18a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "flashrag/utils/utils.py",
+          "sha256": "37d1594a06da6bf710d3c3d77c21c634bf5eaa9631d1af01dfcc27a9deb6f098",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "perturb.py",
+          "sha256": "c8e0cf7392a4d492c4bab711cd999a48363e7ff62e47d3958c6905c805bb9923",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "requirements.txt",
+          "sha256": "64dd4714d22fd6266e310c56a09ccb3b3fe95a6ed35269511d5c60ba557a0fdd",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "experiments/min_dcmi_nfcorpus.py",
+          "sha256": "8396e92ccd33ab628137c8f7f56414c15eea830059e86540244b42562ad175ef",
+          "source_status": "server_added"
+        }
+      ]
+    },
+    {
+      "project": "Neighbour_MIA",
+      "upstream_url": "https://github.com/justusmattern27/neighbour-mia.git",
+      "upstream_commit": "c73e29960206ad65798a67bb853065721a402d2f",
+      "files": [
+        {
+          "path": "Readme.md",
+          "sha256": "a689d60096acd13424aedc5f37d066bff436cf9434be35fdf5a96f41c34d823a",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "attack.py",
+          "sha256": "4364c8f472147d3135bbd865a3e70742de6de63adcd79ecf12f8334bd934ee5b",
+          "source_status": "server_modified"
+        },
+        {
+          "path": "finetune_gpt2_membership.py",
+          "sha256": "fb737a2d906bd580274f91bed5790ae30e43790ee6c5a5518d20a74c7c51055f",
+          "source_status": "server_added"
+        },
+        {
+          "path": "finetune_gpt2_membership_scaled.py",
+          "sha256": "37fe8c96c75a8e30f65f8e8c47c26979a83420c04c0e69cd347f04dd8f319f02",
+          "source_status": "server_added"
+        }
+      ]
+    },
+    {
+      "project": "RAG_MIA",
+      "upstream_url": "https://github.com/ali7naseh/RAG_MIA.git",
+      "upstream_commit": "a53e8fda4f1492f204d968d7afb53ce8287c193c",
+      "files": [
+        {
+          "path": "README.md",
+          "sha256": "c85e51d6c08a03e6bdf90b2ac88852d104a62afd71f98e5edd7d0be5bd28dbc5",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "config.py",
+          "sha256": "cc4a26cbe8e9286938e94234caff837484c7d0dd3b70c2d5cb29a907b027d4e1",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/nfcorpus.yml",
+          "sha256": "341e967f5943143169c21ffcc55a572d3c7819e6bd647a5e9936941f7a7d9efd",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "configs/trec-covid.yml",
+          "sha256": "6f9ca35d7c346765df78b1a7bb65608b1d2798c5b6e2bf117069f044f3cc7f15",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "convert_config_file.py",
+          "sha256": "8f749a31fca54ab070924d4a107d1fa5295172b65def4f2f399cc7714c6b5b03",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "environment.yml",
+          "sha256": "9566d6ea2bae150fbc86cb8aff68fda4a80b829a7aded745c9518c4d13d754e9",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "generate_index.py",
+          "sha256": "4ee1308666bd357f355b579f3369ce567f1384856e6f2ca852bc2335a98a659f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "main_mia.py",
+          "sha256": "8830b80708380ac0cf0ee971076ca54aaef7038870fffeb86bd206adcc9fd0d7",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "mia_utils/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "mia_utils/base.py",
+          "sha256": "f204f03ccff502a124c4cf0184826c436ac6c0c4e5ec419c57f4f5d89b16aa75",
+          "source_status": "server_modified"
+        },
+        {
+          "path": "mia_utils/direct_query.py",
+          "sha256": "5f15da890c8416a6f1be17ab09308482e7db3da97a95710f363ec1b2a87ca7c7",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "mia_utils/mba.py",
+          "sha256": "1468fde5ad171ddb9478a43f9007b28dfc0e2facaa67458250c0e75b923cb783",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "mia_utils/mia.py",
+          "sha256": "ed559210f5f2dde241b040295138b0c5786148f5b1a4b2b16f4002a3f41d50f1",
+          "source_status": "server_modified"
+        },
+        {
+          "path": "mia_utils/s2.py",
+          "sha256": "e3fc9c0de3060d6ae8b26b0fea39e5153656dfeeedb3cae04c62b3eded3cd414",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "mia_utils/utils.py",
+          "sha256": "1b41173583de96476b339c512f5bcd4a59fa414d6245d9acceadfc098b459d6b",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/command_r_config.json",
+          "sha256": "5418111372dbcca8df3d3e7f2205b63009e61065cda78c8e6d07d7a7cacea69d",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/gemma2_2b_config.json",
+          "sha256": "25a20bba9d3a08466dbb640d57029a756957832c3ff862f7b8e2bf3ede3b099f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/gpt3.5_config.json",
+          "sha256": "ac0c71c901f9567e31160111ebdfcd5708e72f69ae2726c56490092d6be802bb",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/gpt4_config.json",
+          "sha256": "412fdd647f84336b74691c98e7cbce1d4c565ab79d1066f94af2ff88d766b6f2",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/llama13b_config.json",
+          "sha256": "627387ec29cab256f164a44ded7867f5e6f20aafe955a3d0b5e568f446d8f308",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/llama3_70b_config.json",
+          "sha256": "a1616911ffc6fb5edcc3a06007458c44d4fde77e2adbaeec7e5c075ae72198c5",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/llama3_config.json",
+          "sha256": "9eb0ccc5031e8777de5532801608534fa2101942f6bd49202283a9f160bd2093",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/llama7b_config.json",
+          "sha256": "d4d0428456ae792b072286958f927d24bfe32caaea29dcb6c7a7d94d5c5f2f90",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/palm2_config.json",
+          "sha256": "3a2e58b4097c5f21c495d260bd39761ff3eb9b0b503b4443b75bfb373603572f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/vicuna13b_config.json",
+          "sha256": "230cc64dcf0b2121795798fe660c20d1d6758a9dd8bd2034876aec6c453482a0",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/vicuna33b_config.json",
+          "sha256": "26f0e349c952ffc31d91515fd60214ade4dd83fc55d14c4db8fb4904b501fb96",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "model_configs/vicuna7b_config.json",
+          "sha256": "2664f7998aa2a82ae336f89ee9e11ce24ff88fe3a958697d7268384751c527e6",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "paraphrasing.py",
+          "sha256": "befd2ec927949d6b51b2c27b064296d7183be0a71ec49fe02ff54d64cacea297",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "prepare_dataset.py",
+          "sha256": "171dac9a27665f8799d6abcb837f4bdf7d4e4521e880cc33ed5435befaf2321c",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "prompt_guard_evals.py",
+          "sha256": "ddf81c30bc5484aee37d2e031c51166f14fa013901d8a7aa3a6f3d9996215e03",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "run_mia.py",
+          "sha256": "20c7c7998bbff946aa8c7a1b0ed107501337557c476eb04ca2a6ead531f6184f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/attack.py",
+          "sha256": "c8a97f9c45124a08e3b488737914adbe0a94865dd2eea47b3ebe7c064e2bcd48",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/CommandR.py",
+          "sha256": "14ca73f7ac774a63437d6a8484ce29527492bf67112549c054565e9befb61056",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/GPT.py",
+          "sha256": "3a2764e97cc064cc08187edd33fed23d0c4724d97dc8f54e25f01da8279b5ba5",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Gemma2.py",
+          "sha256": "931bc211b4ce08a390abc46d90e31ba979ae8fa8e4fe78222df9e5e94bcc9e16",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Llama.py",
+          "sha256": "4d837d93ca8f3acfcfab5cffc4a604acae0d19697b345489af07021c0706a8ba",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Llama3.py",
+          "sha256": "0a7c9d34b7ca9ea7ee1a68818645b7740c564f6ab1c22c00732001cef8e9d29e",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Llama3_70b.py",
+          "sha256": "a1f8f5e6ec66a81a16b31996a44a6445472b7c99531e14b6164a5a16f3618a07",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Model.py",
+          "sha256": "db8869bb6ecdfd21c87735deb4fb18836799a3de85569ddb444469e20c874ae4",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/PaLM2.py",
+          "sha256": "8f4fdd9f634c97aead60406c22c2b94d1155c7a160d5b0cbee946666b0a2ac9f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Phi4.py",
+          "sha256": "8379bb94191505ccfaebe1047a836744d14ffd01a65622fc10697239b22ccf72",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Vicuna.py",
+          "sha256": "f2fd44bcdbfa7cedd354fcf515e9cb0a6d3de3f9754d4775c903b7135a57585b",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/__init__.py",
+          "sha256": "2bac31a87ce7d1bbd883a24f103542a899cdd663ff4805cb3161106c21b4130f",
+          "source_status": "server_modified"
+        },
+        {
+          "path": "src/prompts.py",
+          "sha256": "bbe73fab67d730d917fdc000d8db498f2d2ed6c61320f514556fd0ca6deecdc7",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/BGE.py",
+          "sha256": "679eacb27dbd62f69631f6f4c482dc0dfdee266d9cd542d11f1d8b9e480cbd49",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/ColBERT.py",
+          "sha256": "9ec2dcb32ac35f7b73b7127b372dc4fc8a0f3aef2a984c2072491337241afe32",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/Contriever.py",
+          "sha256": "f68a1bd003b115315f5f140ebdc624270dd31d270efef25667162654bd585a79",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/GTE.py",
+          "sha256": "61ba1e988fd0b3f17dfd3195fe4b836705dbbb36d29443abdf920704eec263a5",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/Jina.py",
+          "sha256": "3d8f13bbf5bcc3f74a1b06b764f642727224938e928969775b9f7b5630acacd1",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/MixedBread.py",
+          "sha256": "8adda0252491db908c133485400b4bf29761c7765dd8e85c52fb42539591c924",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/NVEmbed.py",
+          "sha256": "82e4945e2a99043f0681c3141a641362a9eedea3e8b2605d987e8e8ef4b50261",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/Retriever.py",
+          "sha256": "165f6e0d6a85e0477414b8800596fb313274291f505d27b3786174b8d349a42f",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/retrievers/__init__.py",
+          "sha256": "a89197a307aeb4142231834790caa0a4e7caeaa4df04e8b3c532911f612ef85b",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/utils.py",
+          "sha256": "526d1ec39060907df169d6937f225302e9b8f37b55931181e9a2b60e4575d783",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "worms_eval.py",
+          "sha256": "6e93204fb65addcd3affc43f7460c2acdb9c900982c17c318e109ff8abe941cf",
+          "source_status": "upstream_unchanged"
+        },
+        {
+          "path": "src/models/Phi3.py",
+          "sha256": "c2fdcea22d8eec361b775a8598c9aa7c740c375185cefcb741413833013f6545",
+          "source_status": "server_added"
+        },
+        {
+          "path": "model_configs/phi3_config.json",
+          "sha256": "faae9d981bb50ef675db39a1fc04eca6fab8276cddbe17e93fd090c8a3cbf499",
+          "source_status": "server_added"
+        }
+      ]
+    }
+  ]
+}

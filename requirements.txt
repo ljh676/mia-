@@ -1,0 +1,3 @@
+# Framework CLI and YAML configuration loading only.
+# Model/retrieval dependencies are documented in docs/source_handoff.md.
+PyYAML==6.0.3

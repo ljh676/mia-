@@ -1,0 +1,22 @@
+attack_config:
+  M: 250
+  N: 15
+  attack_method: mia
+  from_ckpt: true
+  name: debug
+  post_filter: top
+  repeat_times: 1
+  seed: 12
+  top_k: 4
+llm_config:
+  gpu_id: 0
+  model_config_path: null
+  model_name: llama3_70b
+  shadow_model_name: llama3
+rag_config:
+  eval_dataset: nfcorpus
+  rerank_k: null
+  reranker: null
+  retrieve_k: 3
+  retriever: colbert
+  split: test

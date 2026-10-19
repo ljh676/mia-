@@ -9,7 +9,19 @@ Unified Janus-MIA Framework 是一个面向 LLM privacy attack / defense / bench
 ```bash
 python run_attack.py --attack <attack_name> --config <config.yml>
 python run_defense.py --defense <defense_name> --config <config.yml>
-python run_benchmark.py --config <benchmark_config.yml>
+python run_benchmark.py --attack <attack_name> --attack-config <attack_config.yml> --defense <defense_name> --defense-config <defense_config.yml>
+```
+
+## 源码交接
+
+现已将服务器上的 Janus、SPV-MIA、DCMI、Neighbour-MIA、RAG-MIA 实际脚本及
+源码依赖收集到 [`external/`](external/README.md)，并记录上游版本与文件哈希。
+数据、模型及实验输出需单独准备；现有配置仍使用原服务器路径。
+部署步骤、依赖、实现状态与评估限制见[源码交接说明](docs/source_handoff.md)。
+
+```bash
+python -m pip install -r requirements.txt
+python scripts/restore_external_sources.py
 ```
 
 ## 已接入攻击方法
@@ -68,7 +80,7 @@ cd /root/autodl-tmp/unified_mia_framework
 
 ```bash
 cd /root/autodl-tmp/unified_mia_framework
-/root/miniconda3/envs/dcmi/bin/python run_benchmark.py   --config ./configs/benchmark_standard.yml
+/root/miniconda3/envs/dcmi/bin/python run_benchmark.py --attack rag_mia --attack-config ./configs/rag_mia.yml --defense query_sanitization --defense-config ./configs/query_sanitization.yml
 ```
 
 ## 项目结构
@@ -91,6 +103,8 @@ unified_mia_framework/
 │   └── pii_output_filter.py
 ├── configs/
 ├── docs/
+├── external/  # 原项目源码与本地实验脚本快照
+├── scripts/   # 源码校验与目录恢复工具
 ├── utils/
 ├── run_attack.py
 ├── run_defense.py

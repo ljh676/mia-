@@ -1,0 +1,2 @@
+# Preserve snapshot bytes so manifest hashes also match on Windows checkouts.
+/external/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

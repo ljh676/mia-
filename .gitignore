@@ -11,3 +11,12 @@ __pycache__/
 *.safetensors
 .cache/
 .vscode/
+
+# Archived Python source uses these directory names; keep code, not assets.
+!external/RAG_MIA/src/models/
+!external/RAG_MIA/src/models/*.py
+!external/Janus/src/pii_leakage/models/
+!external/Janus/src/pii_leakage/models/*.py
+!external/SPV_MIA/data/
+external/SPV_MIA/data/*
+!external/SPV_MIA/data/*.py

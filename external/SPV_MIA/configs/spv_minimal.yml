@@ -1,0 +1,7 @@
+# SPV-MIA ???? privacy evaluation ??
+model_path: /root/autodl-tmp/models/gpt2
+members_file: /root/autodl-tmp/SPV_MIA/data/sample_members.jsonl
+nonmembers_file: /root/autodl-tmp/SPV_MIA/data/sample_nonmembers.jsonl
+output_path: /root/autodl-tmp/SPV_MIA/outputs/spv_mia_result.json
+method: probabilistic_variation
+max_length: 128
