@@ -21,6 +21,6 @@
     "200 additional calibration samples per class held out from the 1000-per-class test set",
     "Local question generation uses small batches with sampled retries; unscorable documents are disclosed with conditional evaluation coverage"
   ],
-  "generation_protocol": "sentence_facts_and_explicit_contrasts_v4",
+  "generation_protocol": "factual_sentences_no_meta_questions_v5",
   "max_question_generation_attempts": 72
 }

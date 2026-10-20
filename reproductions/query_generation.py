@@ -13,24 +13,44 @@ class UnscorableSample(RuntimeError):
 def valid_binary_question(question):
     return (isinstance(question, str) and len(question.strip()) >= 15
             and bool(re.match(r'^(?:is|are|was|were|do|does|did|has|have|had|can|could|will|would|should)\b', question.strip(), re.I))
+            and not re.search(r'\b(?:passage|document|context)\b', question, re.I)
             and question.strip().endswith('?'))
 
 
 def generate_ia_queries(generator, document, count, output, max_attempts=72):
     output = Path(output)
+    legacy = None
     if output.exists():
         saved = read_json(output)
         if saved['document_sha256'] != text_hash(document) or len(saved['queries']) != count:
             raise ValueError('IA query cache identity mismatch')
-        return saved
-    partial = output.with_suffix('.v3.partial.json')
-    state = (read_json(partial) if partial.exists() else
+        if all(valid_binary_question(q['probe']) and q['reference_answer'] in {'yes', 'no'} for q in saved['queries']):
+            return saved
+        legacy = saved
+        # Preserve the evidence for rejected cached questions instead of silently
+        # treating old "does the passage mention..." questions as valid inputs.
+        write_json(output.with_suffix('.rejected_cache.json'), saved)
+    partial = output.with_suffix('.v4.partial.json')
+    old_partial = output.with_suffix('.v3.partial.json')
+    state = (read_json(partial) if partial.exists() else legacy if legacy is not None else
+             read_json(old_partial) if old_partial.exists() else
              {'document_sha256': text_hash(document), 'summary': None, 'queries': [],
               'generation_evidence': [], 'excluded_unknown_reference': [], 'attempts': 0})
     if state['document_sha256'] != text_hash(document):
         raise ValueError('IA partial cache identity mismatch')
+    rejected = [q for q in state['queries'] if not valid_binary_question(q['probe'])
+                or q['reference_answer'] not in {'yes', 'no'}]
+    state['queries'] = [q for q in state['queries'] if q not in rejected]
+    state.setdefault('rejected_cached_questions', []).extend(rejected)
+    if state.get('generation_policy_version') != 5:
+        state['previous_policy_attempts'] = state['attempts']
+        state['attempts'] = 0
+        state['generation_policy_version'] = 5
     seen = {text_hash(item['probe']) for item in state['queries']}
     chunks = [s.strip() for s in re.split(r'(?<=[.!?])\s+', document) if len(s.strip()) > 25]
+    factual = [s for s in chunks if re.search(r'\b(?:is|are|was|were|has|have|had|showed|found|compared|occurred|emerged)\b', s, re.I)
+               and not re.search(r'\b(?:this article|this review|are discussed|reviews available)\b', s, re.I)]
+    chunks = factual or chunks
     # An old exhausted partial is resumable under the newer bounded budget.
     # Rotate only facts actually present in the passage: a mandatory "study
     # population" focus invented unanswerable questions for review abstracts.
@@ -46,26 +66,25 @@ def generate_ia_queries(generator, document, count, output, max_attempts=72):
             'to an alternative that this passage explicitly contradicts. The correct answers should be No.' if contrast == 1 else
             'Ask about specific comparisons or combinations of explicitly stated facts. Include both '
             'true claims and explicitly contradicted alternatives, without inventing unstated study details.')
+        schema = ('{"questions":["..."]}' if state['summary'] else
+                  '{"summary":"My inquiry concerns ...", "questions":["..."]}')
         prompt = (
             f'Write {required + 2} distinct YES/NO questions about the focus passage below. '
             'Every question must start with Is, Are, Was, Were, Did, Does, Has or Can and end with ?. '
             'Use precise subject names; each question must stand alone. Never write What, Why or How questions. '
-            'Include questions stating true facts AND questions stating an explicit conflicting alternative, '
-            'so some answers are Yes and some are No. Vary individual quantities, populations, time periods '
+            'Vary individual quantities, populations, time periods '
             'and comparisons explicitly given in the passage. Do not use outside knowledge or ask about database membership. '
             + task + ' '
-            'Use different facts or relationships from earlier questions, not repeated wording. '
             'Do not ask whether the document or passage mentions something. Do not invent a study population, '
             'control group, dose or result absent from the passage. '
-            'Return JSON only: {"summary":"My inquiry concerns ...", "questions":["..."]}. '
+            'Return JSON only: ' + schema + '. '
             'The summary should be a short retrieval description of the document topic.\n'
             'Document title/topic: ' + document.splitlines()[0] + '\n'
-            'Earlier questions:\n' + json.dumps([q['probe'] for q in state['queries']])
             + '\nFocus passage (use facts from THIS passage, not other parts of the document):\n' + focus
             + f'\nReturn {required + 2} NEW yes/no questions now. JSON only.')
         raw = generator.generate(prompt, 1200, temperature=.65 if attempt else 0.)
         state['generation_evidence'].append({'prompt': prompt, 'raw': raw, 'attempt': attempt,
-                                              'strategy': 'sentence_facts_and_explicit_contrasts_v4',
+                                              'strategy': 'factual_sentences_no_meta_questions_v5',
                                               'temperature': .65 if attempt else 0.})
         try:
             candidates = json_object(raw)
@@ -99,7 +118,7 @@ def generate_ia_queries(generator, document, count, output, max_attempts=72):
     if len(state['queries']) != count:
         write_json(output.with_suffix('.failed.json'), state)
         raise UnscorableSample(f'Local model produced only {len(state["queries"])}/{count} validated IA questions')
-    state['construction'] = 'sentence_facts_and_explicit_contrasts_v4_full_document_reference'
+    state['construction'] = 'factual_sentences_no_meta_questions_v5_full_document_reference'
     write_json(output, state)
     return state
 

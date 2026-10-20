@@ -45,7 +45,7 @@ def main():
     try:
         config = read_json(Path(__file__).parent / 'configs/ia_nfcorpus_local.json')
         smoke_config = dict(config, calibration_per_class=1, test_per_class=1)
-        smoke = root / 'runs/smoke_ia_repair_v3'
+        smoke = root / 'runs/smoke_ia_repair_v4'
         # Import generation evidence only. Failed-sample ledgers and RAG scores
         # stay in the old run, so those documents are actually retried here.
         old = root / 'runs/smoke_ia_repair_v2/generated_queries'
@@ -55,10 +55,13 @@ def main():
                 if source.name.endswith('.failed.json'):
                     continue
                 target = smoke / 'generated_queries' / source.name
-                if not target.exists():
+                copied = not target.exists()
+                if copied:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(source, target)
-                imports.append({'source': str(source), 'destination': str(target), 'sha256': file_hash(source)})
+                imports.append({'source': str(source), 'destination': str(target), 'sha256': file_hash(source),
+                                'action': 'copied' if copied else 'retained_existing_cache',
+                                'destination_sha256': file_hash(target)})
         write_json(smoke / 'generation_cache_imports.json', imports)
         # This short four-document check can share a 24 GB inference GPU when
         # enough memory is free. The formal experiment always takes the queue lock.
@@ -86,7 +89,7 @@ def main():
             except BlockingIOError:
                 status(status='waiting_for_gpu_queue', current='ia_formal', progress=None)
                 time.sleep(10)
-        destination = root / 'runs/ia_nfcorpus_local_full_repair_v3'
+        destination = root / 'runs/ia_nfcorpus_local_full_repair_v4'
         for relative in ['data/datastore.json', 'index/embeddings.npy']:
             source = root / 'runs/ia_nfcorpus_local_full' / relative
             target = destination / relative

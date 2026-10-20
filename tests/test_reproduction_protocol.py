@@ -91,6 +91,8 @@ class ReproductionProtocolTests(unittest.TestCase):
         self.assertTrue(validate('Did the study enroll 127 adolescents?'))
         self.assertFalse(validate('What was the average age of the participants?'))
         self.assertFalse(validate('Was the study randomized'))
+        self.assertFalse(validate('Did the passage mention any specific pathogens?'))
+        self.assertFalse(validate('Is the context concerned with foodborne infections?'))
 
     def test_antonym_selection_cannot_invent_pairs_or_duplicate_positions(self):
         select = extracted_function('query_generation.py', 'select_lexical_edits', {})
@@ -161,6 +163,15 @@ class ReproductionProtocolTests(unittest.TestCase):
             self.assertEqual(len(resumed['queries']), 30)
             self.assertEqual(resumed['queries'][:27], result['queries'][:27])
             self.assertEqual(resumed['attempts'], 25)
+            cached_path = Path(folder) / 'invalid_cached.json'
+            invalid = {**result, 'queries': [dict(q) for q in result['queries']]}
+            invalid['queries'][0]['probe'] = 'Did the passage mention any specific pathogens?'
+            write_json(cached_path, invalid)
+            rechecked = generate(generator, 'A document about several cohorts.', 30, cached_path)
+            self.assertEqual(len(rechecked['queries']), 30)
+            self.assertEqual(len(rechecked['rejected_cached_questions']), 1)
+            self.assertTrue(cached_path.with_suffix('.rejected_cache.json').exists())
+            self.assertFalse(any('passage' in q['probe'] for q in rechecked['queries']))
 
     def test_dcmi_exclusions_preserve_coverage_and_freeze_calibration_before_test(self):
         import re
