@@ -18,6 +18,8 @@
     "User authorized replacing unavailable GPT-4o/GPT-4o-mini with a local Qwen3-1.7B instruction model",
     "Target generator Flan-T5-large differs from IA paper generators; GTE-small selected explicitly",
     "Vanilla RAG variant without query rewriting, as studied in paper Appendix D",
-    "200 additional calibration samples per class held out from the 1000-per-class test set"
-  ]
+    "200 additional calibration samples per class held out from the 1000-per-class test set",
+    "Local question generation uses small batches with sampled retries; unscorable documents are disclosed with conditional evaluation coverage"
+  ],
+  "generation_protocol": "small_batches_sampled_retries_v2"
 }

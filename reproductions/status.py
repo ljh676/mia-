@@ -21,7 +21,7 @@ def collect(root):
             record.update(status='superseded', reason=read_json(directory / 'superseded.json')['reason'])
         elif (directory / 'complete.json').exists():
             complete = read_json(directory / 'complete.json')
-            record.update(status='completed', result=complete['result'])
+            record.update(status=complete['status'], result=complete['result'])
         elif (directory / 'failure.json').exists():
             failure = read_json(directory / 'failure.json')
             record.update(status='failed_or_resuming', failure_type=failure['type'], message=failure['message'])

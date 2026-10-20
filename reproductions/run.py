@@ -27,7 +27,7 @@ def run(config, output):
             result = run_rag(config, output)
         else:
             raise ValueError(config['method'])
-        write_json(output / 'complete.json', {'status': 'completed', 'finished_at': time.time(), 'result': result,
+        write_json(output / 'complete.json', {'status': result.get('status', 'completed'), 'finished_at': time.time(), 'result': result,
                                             'scope': 'one_configured_setting_not_all_paper_tables'})
     except Exception as error:
         write_json(output / 'failure.json', {'status': 'failed', 'type': type(error).__name__,

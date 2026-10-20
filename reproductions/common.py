@@ -100,7 +100,7 @@ def initialize_run(config, output):
     write_json(output / 'source_sha256.json', source_hashes)
     versions = {}
     for name in ('torch', 'transformers', 'datasets', 'numpy', 'scipy', 'scikit-learn', 'sentence-transformers',
-                 'huggingface-hub', 'pyarrow', 'safetensors', 'sentencepiece'):
+                 'huggingface-hub', 'pyarrow', 'safetensors', 'sentencepiece', 'nltk'):
         try:
             versions[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:

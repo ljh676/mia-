@@ -26,14 +26,17 @@ class LocalGenerator:
         self.model, self.tokenizer = load_causal(path)
 
     @torch.inference_mode()
-    def generate(self, prompt, max_new_tokens=1024, thinking=False):
+    def generate(self, prompt, max_new_tokens=1024, thinking=False, temperature=0.):
         messages = [{'role': 'user', 'content': prompt}]
         rendered = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True,
                                                        enable_thinking=thinking)
         tokens = self.tokenizer(rendered, return_tensors='pt', truncation=False).to('cuda')
         if tokens.input_ids.shape[1] + max_new_tokens > self.model.config.max_position_embeddings:
             raise ValueError('Generation request exceeds local-model context window')
-        result = self.model.generate(**tokens, max_new_tokens=max_new_tokens, do_sample=False,
+        sampling = {'do_sample': temperature > 0}
+        if temperature > 0:
+            sampling.update(temperature=temperature, top_p=.9, top_k=40)
+        result = self.model.generate(**tokens, max_new_tokens=max_new_tokens, **sampling,
                                       pad_token_id=self.tokenizer.eos_token_id)
         text = self.tokenizer.decode(result[0, tokens.input_ids.shape[1]:], skip_special_tokens=True)
         if thinking and '</think>' not in text:

@@ -67,3 +67,30 @@ GPU 长任务可用 `python -m reproductions.queue --root /absolute/run/root --d
 - DCMI：[CCS 2025 论文](https://arxiv.org/abs/2509.06026)，[原作者代码](https://github.com/Xinyu140203/RAG_MIA)。本实现补齐原作者 `MIA.py` 的四组信号占位所需的真实采集链。
 
 固定的原作者 commit 与原始关键文件仍见 `paper_reproductions/`；新实现文件不能标成原作者逐行原码。
+
+## IA / DCMI 生成修复与后台续跑
+
+IA 按小批次补齐每篇文档的 30 个问题，重试采用有固定文档种子的采样，
+拒绝开放式问题、重复文本及未知参考答案；每批保存 `.partial.json`，不再反复执行同一个贪心生成任务。
+DCMI 先按上下文词性排除名词和动词，使用 WordNet 的直接形容词/副词反义词关系作为候选白名单，
+再由本地模型选择符合上下文的词义和位置。
+保存词典版本、关系来源、每个替换的位置、原词和新词，不接受模型任意编造的替换，也不采用整段改写造成的删除。
+这个词典约束是原论文 GPT-4o 生成器的替代实现，需要在报告中注明；它不等价于人工语义核验。
+
+安装 `reproductions/requirements.txt` 后，先执行 `python -m nltk.downloader wordnet averaged_perceptron_tagger_eng`。
+Linux 后台运行：
+
+```bash
+tmux new-session -d -s mia-repair 'python -u -m reproductions.repair_queue --root /absolute/run/root'
+tmux attach -t mia-repair
+```
+
+修复队列先分别验证 4 篇文档的实际模型链路（IA 仍要求每篇 30 问），
+只有对应检查完整通过，才启动该方法的正式设置。正式顺序为 DCMI、IA。
+输出使用新的 `*_repair_v2` 目录，仅复制原来的成员划分与检索向量，保留全部旧结果。
+阶段状态见 `repair_queue_status.json`，每个阶段的日志为根目录下同名 `.log`。
+
+文档无法生成合格问题或无适当反义词时，将原因写入 `unavailable_samples.jsonl`，不赋假分数、不补换样本。
+继续处理其他文档，并按成员标签和校准/测试划分报告覆盖率。
+有排除样本时，完成状态为 `completed_with_exclusions`，指标仅针对可评分文档，不能称为原论文全样本复现。
+未满足请求扰动比例的查询仍单独统计真实替换比例；不得把较少的替换数量说成满足了原论文 theta。

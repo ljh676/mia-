@@ -9,8 +9,9 @@ import re
 import time
 from .common import (read_json, write_json, read_records, append_record, text_hash,
                      seed_all, sample_seed, evaluate, model_fingerprint)
-from .generation import LocalGenerator, TargetRAGGenerator, json_object
+from .generation import LocalGenerator, TargetRAGGenerator
 from .rag_data import prepare, Retriever
+from .query_generation import generate_ia_queries, antonym_edits, UnscorableSample
 
 
 def ia_score(expected, responses, penalty=5):
@@ -18,65 +19,6 @@ def ia_score(expected, responses, penalty=5):
         raise ValueError('IA requires aligned non-unknown reference answers')
     return sum(int(answer == gold) - penalty * int(answer == 'UNK')
                for gold, answer in zip(expected, responses)) / len(expected)
-
-
-def generate_ia_queries(generator, document, count, output):
-    output = Path(output)
-    if output.exists():
-        saved = read_json(output)
-        if saved['document_sha256'] != text_hash(document) or len(saved['queries']) != count:
-            raise ValueError('IA query cache identity mismatch')
-        return saved
-    questions, evidence, excluded = [], [], []
-    summary = None
-    seen = set()
-    for attempt in range(8):
-        required = count - len(questions)
-        prompt = (
-            'Create natural, specific yes/no questions answerable from the document below. '
-            'Each question must stand alone and refer to precise names, quantities, relationships or findings '
-            'rather than general knowledge. Do not ask whether the document is in a database or context. '
-            'Create a short retrieval summary starting with "My inquiry concerns", containing key subject terms. '
-            f'Return valid JSON only, with keys "summary" (string) and "questions" (list of {required + 5} strings). '
-            'Avoid duplicate questions and do not include answers.\n'
-            'Example question: Did the trial enroll 127 adolescents with a mean age of 14 years?\n'
-            'Already used questions: ' + str([q['probe'] for q in questions]) + '\nDocument:\n' + document)
-        if attempt:
-            prompt += (f'\nThis is attempt {attempt + 1}. Earlier output did not provide enough valid, distinct, '
-                       'answerable questions. Return one valid JSON object without code fences; '
-                       'questions must be strings and all facts must come from this document.')
-        raw = generator.generate(prompt, 3072)
-        evidence.append({'prompt': prompt, 'raw': raw})
-        try:
-            candidates = json_object(raw)
-        except (ValueError, TypeError):
-            continue
-        if summary is None and isinstance(candidates.get('summary'), str):
-            summary = candidates['summary'].strip()
-        if not summary or not isinstance(candidates.get('questions'), list):
-            continue
-        for probe in candidates['questions']:
-            if not isinstance(probe, str) or len(probe.strip()) < 15 or text_hash(probe) in seen:
-                continue
-            probe = probe.strip()
-            seen.add(text_hash(probe))
-            query = summary + ' ' + probe + ' Please answer with Yes, No, or I don\'t know.'
-            gold, answer_evidence = generator.answer(document, query)
-            if gold == 'UNK':
-                excluded.append({'probe': probe, 'reference': answer_evidence})
-                continue
-            questions.append({'probe': probe, 'query': query, 'reference_answer': gold,
-                              'reference_evidence': answer_evidence})
-            if len(questions) == count:
-                break
-        if len(questions) == count:
-            saved = {'document_sha256': text_hash(document), 'summary': summary,
-                     'queries': questions, 'generation_evidence': evidence, 'excluded_unknown_reference': excluded}
-            write_json(output, saved)
-            return saved
-    write_json(output.with_suffix('.failed.json'), {'document_sha256': text_hash(document),
-                'queries': questions, 'generation_evidence': evidence, 'excluded': excluded})
-    raise RuntimeError(f'Local model produced only {len(questions)}/{count} validated IA questions')
 
 
 def sparse_replacements(document, proposal):
@@ -101,56 +43,17 @@ def sparse_replacements(document, proposal):
     return edits
 
 
-def antonym_edits(generator, document, output):
-    output = Path(output)
-    if output.exists():
-        saved = read_json(output)
-        if saved['document_sha256'] != text_hash(document):
-            raise ValueError('DCMI perturbation cache identity mismatch')
-        return saved
-    spans = list(re.finditer(r"\b\w+(?:[-']\w+)*\b", document))
-    words = [m.group() for m in spans]
-    desired = max(1, int(.12 * len(words)))
-    prompt = (f'Replace {desired} key adjectives or adverbs in noticeable positions with their antonyms '
-              f'in the following text, ensuring the modified text remains logically correct:\n{document}\n'
-              'Return only the modified text. Keep every other word, number, name and sentence unchanged. '
-              'Use real semantic opposites, such as acute/chronic, common/rare, high/low, positive/negative. '
-              'Do not just change inflections or invent abbreviations. Think briefly before answering.')
-    evidence = []
-    collected = {}
-    for attempt in range(2):
-        current_prompt = prompt
-        if attempt:
-            current_prompt += ('\nAlso consider other adjective/adverb positions beyond these already collected: '
-                               + str([e['original'] for e in collected.values()]))
-        try:
-            raw = generator.generate(current_prompt, 4096, thinking=True)
-        except RuntimeError as error:
-            evidence.append({'prompt': current_prompt, 'error': str(error)})
-            continue
-        evidence.append({'prompt': current_prompt, 'raw': raw})
-        for edit in sparse_replacements(document, raw):
-            collected.setdefault(edit['position'], edit)
-        if len(collected) >= desired:
-            break
-    if collected:
-        saved = {'document_sha256': text_hash(document), 'word_count': len(words),
-                 'edits': list(collected.values()), 'generation_evidence': evidence,
-                 'construction': 'paper_appendix_D_local_reasoning_model_sparse_reconstruction',
-                 'semantic_validation': 'local_model_proposal_not_independent_human_antonym_verification'}
-        write_json(output, saved)
-        return saved
-    write_json(output.with_suffix('.failed.json'), {'evidence': evidence})
-    raise RuntimeError('Local model did not produce valid sparse antonym replacements')
-
-
 def apply_edits(document, edit_record, theta):
     words = list(re.finditer(r"\b\w+(?:[-']\w+)*\b", document))
     desired = max(1, int(theta * len(words)))
     selected = edit_record['edits'][:desired]
     result = document
     for item in sorted(selected, key=lambda r: r['position'], reverse=True):
+        if not 0 <= item['position'] < len(words):
+            raise ValueError('Perturbation position outside document')
         span = words[item['position']]
+        if span.group() != item['original']:
+            raise ValueError('Perturbation original word does not match document')
         result = result[:span.start()] + item['replacement'] + result[span.end():]
     if result == document:
         raise ValueError('DCMI perturbation did not change the sample')
@@ -173,6 +76,9 @@ def run_rag(config, output):
     path = output / 'records.jsonl'
     records = read_records(path)
     completed = {r['id'] for r in records}
+    unavailable_path = output / 'unavailable_samples.jsonl'
+    unavailable = read_records(unavailable_path)
+    unavailable_ids = {r['id'] for r in unavailable}
     query_path = output / 'query_records.jsonl'
     query_records = read_records(query_path)
     queried = {(r['sample_id'], r['query_id']): r for r in query_records}
@@ -214,16 +120,39 @@ def run_rag(config, output):
     if config['method'] == 'dcmi' and selected is None and len(calibration) == 2 * config['calibration_per_class']:
         selected = select_calibration(calibration)
     all_samples = sorted(datastore['records'], key=lambda r: 0 if r['split'] == 'calibration' else 1)
+    # Every configured document is accounted for, including unscorable inputs.
+    # Exclusions are never assigned artificial scores or silently resampled.
     for index, sample in enumerate(all_samples):
-        if sample['id'] in completed:
+        if sample['id'] in completed or sample['id'] in unavailable_ids:
             continue
+        if config['method'] == 'dcmi' and sample['split'] == 'test' and selected is None:
+            calibration = [r for r in records if r['split'] == 'calibration']
+            if {r['label'] for r in calibration} != {0, 1}:
+                raise RuntimeError('Insufficient scorable calibration classes; test queries not started')
+            selected = select_calibration(calibration)
         identifier = sample['id']
         seed_all(sample_seed(config['seed'], identifier))
         document = corpus[identifier]['text']
         cache_name = text_hash(identifier)
+        try:
+            if config['method'] == 'ia':
+                generated = generate_ia_queries(generator, document, config['questions_per_document'],
+                                                 output / 'generated_queries' / f'{cache_name}.json')
+            else:
+                edits = antonym_edits(generator, document, output / 'perturbations' / f'{cache_name}.json')
+        except UnscorableSample as error:
+            item = {**sample, 'reason': str(error), 'document_sha256': text_hash(document),
+                    'status': 'unscorable_no_synthetic_score', 'time': time.time()}
+            append_record(unavailable_path, item)
+            unavailable.append(item)
+            unavailable_ids.add(identifier)
+            write_json(output / 'progress.json', {'stage': config['method'],
+                'done': len(records), 'unscorable': len(unavailable),
+                'processed': len(completed) + len(unavailable_ids), 'total': len(all_samples),
+                'updated_at': time.time()})
+            print(f'{config["method"]} unscorable {identifier}: {error}', flush=True)
+            continue
         if config['method'] == 'ia':
-            generated = generate_ia_queries(generator, document, config['questions_per_document'],
-                                             output / 'generated_queries' / f'{cache_name}.json')
             responses = [query(identifier, str(i), item['query']) for i, item in enumerate(generated['queries'])]
             gold = [item['reference_answer'] for item in generated['queries']]
             answers = [r['answer'] for r in responses]
@@ -232,7 +161,6 @@ def run_rag(config, output):
                       'questions': len(gold), 'unknown_responses': answers.count('UNK'),
                       'target_document_retrieved_count': sum(any(d['id'] == identifier for d in r['retrieved']) for r in responses)}
         else:
-            edits = antonym_edits(generator, document, output / 'perturbations' / f'{cache_name}.json')
             original_query = f'Is this: "{document}" right? Answer with Yes or No.'
             original = query(identifier, 'original', original_query)
             thetas = config['theta_grid'] if sample['split'] == 'calibration' else [selected['theta']]
@@ -260,6 +188,7 @@ def run_rag(config, output):
             if len(calibration) == 2 * config['calibration_per_class']:
                 selected = select_calibration(calibration)
         write_json(output / 'progress.json', {'stage': config['method'], 'done': len(records),
+                    'unscorable': len(unavailable), 'processed': len(completed) + len(unavailable_ids),
                     'total': len(all_samples), 'updated_at': time.time(), 'selected_calibration': selected})
         print(f'{config["method"]} {len(records)}/{len(all_samples)}', flush=True)
     if config['method'] == 'ia':
@@ -289,6 +218,16 @@ def run_rag(config, output):
                     'original_paper_models_fully_matched': False, 'actual_target_rag_outputs': True,
                     'datastore_size': len(datastore['member_ids']), 'query_count': len(queried),
                     'protocol_differences': config.get('protocol_differences', [])})
+    summary['coverage'] = {'configured': len(all_samples), 'scored': len(records), 'unscorable': len(unavailable),
+        'by_split_and_label': {f'{split}_{label}': {
+            'configured': sum(r['split'] == split and r['label'] == label for r in all_samples),
+            'scored': sum(r['split'] == split and r['label'] == label for r in records),
+            'unscorable': sum(r['split'] == split and r['label'] == label for r in unavailable)}
+            for split in ('calibration', 'test') for label in (0, 1)},
+        'scope': 'conditional_on_scorable_documents' if unavailable else 'all_configured_documents'}
+    if unavailable:
+        summary['status'] = 'completed_with_exclusions'
+        summary['evaluation_scope'] = 'conditional_on_scorable_documents_not_full_paper_protocol'
     if config['method'] == 'dcmi':
         perturbations = [variant['perturbation'] for r in records for variant in r['variants'].values()]
         summary['perturbation_budget_checks'] = {
@@ -296,5 +235,16 @@ def run_rag(config, output):
             'requested_budget_met': sum(p['requested_budget_met'] for p in perturbations),
             'unmet_budget_count': sum(not p['requested_budget_met'] for p in perturbations),
             'mean_actual_fraction': sum(p['fraction_replaced'] for p in perturbations) / len(perturbations)}
+    # Keep the commonly read metric artifact as explicit as the run marker.
+    write_json(output / 'evaluation' / 'result.json', summary)
+    for name in ('adversary_2', 'adversary_3', 'uncalibrated_baseline'):
+        metric_path = output / name / 'result.json'
+        if metric_path.exists():
+            metric = read_json(metric_path)
+            metric['coverage'] = summary['coverage']
+            if unavailable:
+                metric.update(status='completed_with_exclusions',
+                              evaluation_scope='conditional_on_scorable_documents_not_full_paper_protocol')
+            write_json(metric_path, metric)
     write_json(output / 'result.json', summary)
     return summary
