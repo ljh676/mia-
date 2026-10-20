@@ -9,9 +9,11 @@ from .queue import current_progress
 
 def collect(root):
     root = Path(root)
-    report = {'observed_at': time.time(), 'queue': None, 'experiments': []}
+    report = {'observed_at': time.time(), 'queue': None, 'ia_queue': None, 'experiments': []}
     if (root / 'queue_status.json').exists():
         report['queue'] = read_json(root / 'queue_status.json')
+    if (root / 'ia_queue_status.json').exists():
+        report['ia_queue'] = read_json(root / 'ia_queue_status.json')
     for directory in sorted((root / 'runs').glob('*')):
         if not directory.is_dir():
             continue

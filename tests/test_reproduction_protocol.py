@@ -152,6 +152,15 @@ class ReproductionProtocolTests(unittest.TestCase):
             self.assertEqual(len({q['probe'] for q in result['queries']}), 30)
             self.assertEqual(generator.calls, 4)
             self.assertEqual(generate(generator, 'A document about several cohorts.', 30, path), result)
+            # The previous 24-attempt cap used to make these partials impossible
+            # to resume. Preserve the accepted references and append missing ones.
+            resumed_path = Path(folder) / 'resumed.json'
+            partial = {**result, 'queries': result['queries'][:27], 'attempts': 24}
+            write_json(resumed_path.with_suffix('.v3.partial.json'), partial)
+            resumed = generate(generator, 'A document about several cohorts.', 30, resumed_path)
+            self.assertEqual(len(resumed['queries']), 30)
+            self.assertEqual(resumed['queries'][:27], result['queries'][:27])
+            self.assertEqual(resumed['attempts'], 25)
 
     def test_dcmi_exclusions_preserve_coverage_and_freeze_calibration_before_test(self):
         import re

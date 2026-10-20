@@ -137,7 +137,8 @@ def run_rag(config, output):
         try:
             if config['method'] == 'ia':
                 generated = generate_ia_queries(generator, document, config['questions_per_document'],
-                                                 output / 'generated_queries' / f'{cache_name}.json')
+                                                 output / 'generated_queries' / f'{cache_name}.json',
+                                                 max_attempts=config.get('max_question_generation_attempts', 72))
             else:
                 edits = antonym_edits(generator, document, output / 'perturbations' / f'{cache_name}.json')
         except UnscorableSample as error:
@@ -191,6 +192,20 @@ def run_rag(config, output):
                     'unscorable': len(unavailable), 'processed': len(completed) + len(unavailable_ids),
                     'total': len(all_samples), 'updated_at': time.time(), 'selected_calibration': selected})
         print(f'{config["method"]} {len(records)}/{len(all_samples)}', flush=True)
+    coverage = {'configured': len(all_samples), 'scored': len(records), 'unscorable': len(unavailable),
+        'by_split_and_label': {f'{split}_{label}': {
+            'configured': sum(r['split'] == split and r['label'] == label for r in all_samples),
+            'scored': sum(r['split'] == split and r['label'] == label for r in records),
+            'unscorable': sum(r['split'] == split and r['label'] == label for r in unavailable)}
+            for split in ('calibration', 'test') for label in (0, 1)},
+        'scope': 'conditional_on_scorable_documents' if unavailable else 'all_configured_documents'}
+    write_json(output / 'coverage.json', coverage)
+    absent = [split for split in ('calibration', 'test')
+              if {r['label'] for r in records if r['split'] == split} != {0, 1}]
+    if absent:
+        raise RuntimeError(f'{config["method"]}: only {len(records)}/{len(all_samples)} documents scorable; '
+                           f'missing membership class in {absent}. See coverage.json and unavailable_samples.jsonl; '
+                           'unscorable documents were not assigned scores.')
     if config['method'] == 'ia':
         summary = evaluate(records, output / 'evaluation', 'ia_local_generator_substitution')
     else:
@@ -218,13 +233,7 @@ def run_rag(config, output):
                     'original_paper_models_fully_matched': False, 'actual_target_rag_outputs': True,
                     'datastore_size': len(datastore['member_ids']), 'query_count': len(queried),
                     'protocol_differences': config.get('protocol_differences', [])})
-    summary['coverage'] = {'configured': len(all_samples), 'scored': len(records), 'unscorable': len(unavailable),
-        'by_split_and_label': {f'{split}_{label}': {
-            'configured': sum(r['split'] == split and r['label'] == label for r in all_samples),
-            'scored': sum(r['split'] == split and r['label'] == label for r in records),
-            'unscorable': sum(r['split'] == split and r['label'] == label for r in unavailable)}
-            for split in ('calibration', 'test') for label in (0, 1)},
-        'scope': 'conditional_on_scorable_documents' if unavailable else 'all_configured_documents'}
+    summary['coverage'] = coverage
     if unavailable:
         summary['status'] = 'completed_with_exclusions'
         summary['evaluation_scope'] = 'conditional_on_scorable_documents_not_full_paper_protocol'

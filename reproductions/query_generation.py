@@ -16,7 +16,7 @@ def valid_binary_question(question):
             and question.strip().endswith('?'))
 
 
-def generate_ia_queries(generator, document, count, output):
+def generate_ia_queries(generator, document, count, output, max_attempts=72):
     output = Path(output)
     if output.exists():
         saved = read_json(output)
@@ -31,14 +31,21 @@ def generate_ia_queries(generator, document, count, output):
         raise ValueError('IA partial cache identity mismatch')
     seen = {text_hash(item['probe']) for item in state['queries']}
     chunks = [s.strip() for s in re.split(r'(?<=[.!?])\s+', document) if len(s.strip()) > 25]
-    focuses = ['study population and setting', 'study methods and comparisons',
-               'exact numerical results', 'associations and relationships',
-               'conclusions and limitations', 'explicitly contradicted alternative claims']
-    for attempt in range(state['attempts'], 24):
+    # An old exhausted partial is resumable under the newer bounded budget.
+    # Rotate only facts actually present in the passage: a mandatory "study
+    # population" focus invented unanswerable questions for review abstracts.
+    for attempt in range(state['attempts'], max_attempts):
         required = min(4, count - len(state['queries']))
         if required <= 0:
             break
         focus = chunks[attempt % len(chunks)] if chunks else document
+        contrast = attempt % 3
+        task = (
+            'Ask about separate explicit facts and relationships in this passage.' if contrast == 0 else
+            'Ask counterfactual yes/no questions: change ONE entity, relationship, direction or quantity '
+            'to an alternative that this passage explicitly contradicts. The correct answers should be No.' if contrast == 1 else
+            'Ask about specific comparisons or combinations of explicitly stated facts. Include both '
+            'true claims and explicitly contradicted alternatives, without inventing unstated study details.')
         prompt = (
             f'Write {required + 2} distinct YES/NO questions about the focus passage below. '
             'Every question must start with Is, Are, Was, Were, Did, Does, Has or Can and end with ?. '
@@ -46,8 +53,10 @@ def generate_ia_queries(generator, document, count, output):
             'Include questions stating true facts AND questions stating an explicit conflicting alternative, '
             'so some answers are Yes and some are No. Vary individual quantities, populations, time periods '
             'and comparisons explicitly given in the passage. Do not use outside knowledge or ask about database membership. '
-            f'This batch focuses on {focuses[attempt % len(focuses)]}. '
+            + task + ' '
             'Use different facts or relationships from earlier questions, not repeated wording. '
+            'Do not ask whether the document or passage mentions something. Do not invent a study population, '
+            'control group, dose or result absent from the passage. '
             'Return JSON only: {"summary":"My inquiry concerns ...", "questions":["..."]}. '
             'The summary should be a short retrieval description of the document topic.\n'
             'Document title/topic: ' + document.splitlines()[0] + '\n'
@@ -56,6 +65,7 @@ def generate_ia_queries(generator, document, count, output):
             + f'\nReturn {required + 2} NEW yes/no questions now. JSON only.')
         raw = generator.generate(prompt, 1200, temperature=.65 if attempt else 0.)
         state['generation_evidence'].append({'prompt': prompt, 'raw': raw, 'attempt': attempt,
+                                              'strategy': 'sentence_facts_and_explicit_contrasts_v4',
                                               'temperature': .65 if attempt else 0.})
         try:
             candidates = json_object(raw)
@@ -89,7 +99,7 @@ def generate_ia_queries(generator, document, count, output):
     if len(state['queries']) != count:
         write_json(output.with_suffix('.failed.json'), state)
         raise UnscorableSample(f'Local model produced only {len(state["queries"])}/{count} validated IA questions')
-    state['construction'] = 'bounded_small_batches_with_sampled_retries_and_full_document_reference'
+    state['construction'] = 'sentence_facts_and_explicit_contrasts_v4_full_document_reference'
     write_json(output, state)
     return state
 
