@@ -1,10 +1,14 @@
 # RAG-MIA / Interrogation Attack
 
+**2026-10-22 当前结果：** 已完成本地替代模型版本；AUC 0.929836，测试准确率 85.98%，2378/2400 篇可评分。22 篇被排除，不能当作原论文全样本结果。
+
+本轮使用 `reproductions/` 新管线，详见[结果与实跑配置](../../reproductions/results/2026-10-21/README.md)。下文保留历史适配入口的核查，不代表新管线仍缺少同样的阶段，也不表示严格完整论文复现已获验证。
+
 论文：[Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation](https://arxiv.org/abs/2502.00306)。
 原作者：[ali7naseh/RAG_MIA](https://github.com/ali7naseh/RAG_MIA)，固定版本
 `a53e8fda4f1492f204d968d7afb53ce8287c193c`。
 
-## 当前自己的代码
+## 历史适配代码入口
 
 `external/RAG_MIA/` 是本地适配版；统一调用为：
 

@@ -1,5 +1,22 @@
 # Unified Janus-MIA Framework
 
+## 本轮 MIA 实验结果（2026-10-22 更新）
+
+四种方法各自当前配置的实验已结束，代码和轻量结果可作为阶段交付。
+**尚未完成四篇论文的严格完整复现验证。**
+
+| 方法 | AUC | 测试准确率 | 可评分/配置（含校准与测试） |
+| --- | ---: | ---: | ---: |
+| Neighbour | 0.5343 | 52.50% | 2400/2400 |
+| SPV | 0.8657 | 81.20% | 2400/2400 |
+| IA | 0.9298 | 85.98% | 2378/2400 |
+| DCMI | 0.8173 | 75.72% | 3281/4000 |
+
+完整测试分母、低误报指标、模型替换、样本排除、DCMI 编辑预算及实际配置见
+[本轮结果与交付说明](reproductions/results/2026-10-21/README.md)。
+这些是不同设置的结果，不是统一受控 benchmark；IA/DCMI 的指标只针对可评分子集。
+历史简化入口与本轮正式实验的状态分别保留，请以本轮报告为当前交付依据。
+
 **正式复现的新入口：[`reproductions/`](reproductions/README.md)。** 包含真实目标训练、
 SPV self-prompt/reference 训练、Neighbour embedding dropout、IA 与 DCMI 的真实 RAG 信号采集。
 历史 `run_attack.py` 配置保留原实验用途；本轮正式实验请使用 `python -m reproductions.run`。
@@ -135,7 +152,8 @@ unified_mia_framework/
 
 ## 数据与模型说明
 
-本项目实验必须保持 synthetic-safe：
+Janus/LoRA-Janus 的合成标识符实验使用以下约定；四种 MIA 本轮实验另外使用公开的
+AG News、NFCorpus、BEIR TREC-COVID 数据，详见本轮结果和配置。
 
 - 只使用 synthetic identifiers 和 `example-synthetic.com` synthetic emails。
 - 不使用真实姓名、真实邮箱、真实电话或真实地址。

@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "count": 10000,
+  "length": 128,
+  "source_prompt_tokens": 16,
+  "generated_sha256": "c1698494408b304e5e7e4b230ccf1d7e17ba99a34393c6f4c9776427998f2ab5",
+  "target": {
+    "path": "/root/autodl-tmp/mia_paper_reproduction_20261019/runs/spv_agnews_gpt2xl_full/target",
+    "files": {
+      "config.json": "1d0e5934b049c8e039cfa5eddb590a3e534114eff1226bd6e9d50d9d09ad5ac2",
+      "generation_config.json": "f0fbd59fa0ac70a180770d0b883dc916c6266aed67a1f15ddb10dc9fb636a1f7",
+      "model.safetensors": "2e4265c2e2dcabd725339e4faf528496165c241e8ed9ac361cd58cfd7fb8613d",
+      "tokenizer_config.json": "d0e99e3da75fd15dd9a9747896f860100a13ef7e92cc9689b63d43f18652b24f"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "theta": 0.06,
+  "threshold": 0.39,
+  "calibration_accuracy": 0.7684848484848484,
+  "test_labels_used": false
+}

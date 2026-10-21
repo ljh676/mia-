@@ -1,10 +1,14 @@
 # Neighbourhood Comparison
 
+**2026-10-22 当前结果：** AUC 0.534293，测试准确率 52.50%，当前配置流程已完成；攻击效果较弱，论文一致性尚待核对。
+
+本轮使用 `reproductions/` 新管线，详见[结果与实跑配置](../../reproductions/results/2026-10-21/README.md)。下文保留历史适配入口的核查，不代表新管线仍缺少同样的阶段，也不表示严格完整论文复现已获验证。
+
 论文：[Membership Inference Attacks against Language Models via Neighbourhood Comparison](https://aclanthology.org/2023.findings-acl.719/)。
 原作者：[justusmattern27/neighbour-mia](https://github.com/justusmattern27/neighbour-mia)，
 固定版本 `c73e29960206ad65798a67bb853065721a402d2f`。
 
-## 当前自己的代码
+## 历史适配代码入口
 
 - `external/Neighbour_MIA/attack.py`：本地 GPT-2/BERT 攻击适配。
 - `finetune_gpt2_membership.py`、`finetune_gpt2_membership_scaled.py`：本地目标模型训练。

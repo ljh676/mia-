@@ -1,0 +1,146 @@
+{
+  "status": "completed_with_exclusions",
+  "finished_at": 1792597530.5980237,
+  "result": {
+    "method": "ia_local_generator_substitution",
+    "status": "completed_with_exclusions",
+    "evaluation_scope": "conditional_on_scorable_documents_not_full_paper_protocol",
+    "counts": {
+      "calibration": 395,
+      "test": 1983,
+      "test_members": 987,
+      "test_nonmembers": 996
+    },
+    "auc": 0.9298358581234767,
+    "accuracy": 0.8598083711548159,
+    "precision": 0.8347497639282342,
+    "recall": 0.8956433637284701,
+    "f1": 0.8641251221896383,
+    "threshold": 0.8666666666666667,
+    "threshold_source": "independent_calibration_only",
+    "score_orientation": "larger_means_member_predeclared",
+    "tpr_at_fpr": {
+      "0.01": 0.0,
+      "0.001": 0.0
+    },
+    "empirical_fpr_resolution": 0.001004016064257028,
+    "roc": {
+      "fpr": [
+        0.0,
+        0.020080321285140562,
+        0.05923694779116466,
+        0.10542168674698796,
+        0.1757028112449799,
+        0.23393574297188754,
+        0.29819277108433734,
+        0.37248995983935745,
+        0.43373493975903615,
+        0.5070281124497992,
+        0.5773092369477911,
+        0.6385542168674698,
+        0.6887550200803213,
+        0.7479919678714859,
+        0.7931726907630522,
+        0.8343373493975904,
+        0.8664658634538153,
+        0.892570281124498,
+        0.9146586345381527,
+        0.9317269076305221,
+        0.9457831325301205,
+        0.9618473895582329,
+        0.9728915662650602,
+        0.9769076305220884,
+        0.9789156626506024,
+        0.9859437751004017,
+        0.9889558232931727,
+        0.9899598393574297,
+        0.9929718875502008,
+        0.9939759036144579,
+        0.9949799196787149,
+        0.9959839357429718,
+        0.9969879518072289,
+        0.998995983935743,
+        1.0
+      ],
+      "tpr": [
+        0.0,
+        0.46099290780141844,
+        0.6788247213779128,
+        0.8247213779128673,
+        0.8956433637284701,
+        0.9270516717325228,
+        0.9564336372847011,
+        0.9706180344478217,
+        0.9787234042553191,
+        0.9858156028368794,
+        0.9929078014184397,
+        0.993920972644377,
+        0.9959473150962512,
+        0.9959473150962512,
+        0.9969604863221885,
+        0.9969604863221885,
+        0.9979736575481256,
+        0.9989868287740629,
+        0.9989868287740629,
+        0.9989868287740629,
+        0.9989868287740629,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "finished_at": 1792597530.2840922,
+    "api_generation_replaced_with_local_model": true,
+    "original_paper_models_fully_matched": false,
+    "actual_target_rag_outputs": true,
+    "datastore_size": 2393,
+    "query_count": 71340,
+    "protocol_differences": [
+      "User authorized replacing unavailable GPT-4o/GPT-4o-mini with a local Qwen3-1.7B instruction model",
+      "Target generator Flan-T5-large differs from IA paper generators; GTE-small selected explicitly",
+      "Vanilla RAG variant without query rewriting, as studied in paper Appendix D",
+      "200 additional calibration samples per class held out from the 1000-per-class test set",
+      "Local question generation uses small batches with sampled retries; unscorable documents are disclosed with conditional evaluation coverage"
+    ],
+    "coverage": {
+      "configured": 2400,
+      "scored": 2378,
+      "unscorable": 22,
+      "by_split_and_label": {
+        "calibration_0": {
+          "configured": 200,
+          "scored": 197,
+          "unscorable": 3
+        },
+        "calibration_1": {
+          "configured": 200,
+          "scored": 198,
+          "unscorable": 2
+        },
+        "test_0": {
+          "configured": 1000,
+          "scored": 996,
+          "unscorable": 4
+        },
+        "test_1": {
+          "configured": 1000,
+          "scored": 987,
+          "unscorable": 13
+        }
+      },
+      "scope": "conditional_on_scorable_documents"
+    }
+  },
+  "scope": "one_configured_setting_not_all_paper_tables"
+}

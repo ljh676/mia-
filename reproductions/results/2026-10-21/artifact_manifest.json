@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "scope": "lightweight_completed_run_metadata_only",
+  "runs": {
+    "neighbour": {
+      "run_directory_name": "neighbour_agnews_fp32_full",
+      "files": {
+        "complete.json": {
+          "sha256": "c6a49137b951a8e2612326b1f0216b1023108bd1d4d50b21f392642bb44c329c",
+          "bytes": 60454
+        },
+        "config.json": {
+          "sha256": "6fac57f47a917309f32650f1177505ca14983bb83eeeff7a419071979fec3614",
+          "bytes": 698
+        },
+        "environment.json": {
+          "sha256": "c7a445b17b17a436b879716b245c84bc64336e97946a42a0eb4830acb12f2b12",
+          "bytes": 551
+        },
+        "source_sha256.json": {
+          "sha256": "4562a826ccc0aff838b264c48977c393bc414532b22439da0d4c0c7c2a73c6b4",
+          "bytes": 1840
+        },
+        "target/training_complete.json": {
+          "sha256": "d1476b39decba6b005efd44bd901ccca7df18fbd33c8016dcdd407369c837ef5",
+          "bytes": 1113
+        },
+        "target/best_epoch.json": {
+          "sha256": "50b8b80f4692e8f1b39bbf60e51d3fcf1d0aa8e362c23a8b8c88c2859d12e90e",
+          "bytes": 156
+        }
+      }
+    },
+    "spv": {
+      "run_directory_name": "spv_agnews_gpt2xl_full",
+      "files": {
+        "complete.json": {
+          "sha256": "3f3909fb08ee520a9f5405da279c2a20757b8d35846b42c7e6f5d496e1187bce",
+          "bytes": 60480
+        },
+        "config.json": {
+          "sha256": "1603f0b207e5cc4c121488b71607b90ef0fa7c5157e9ffec144061eeb7dd940b",
+          "bytes": 737
+        },
+        "environment.json": {
+          "sha256": "bc67dd59a2f6160a8be00b5ad44cc91c5ca8c8f332b5461b39139e1246ddb59d",
+          "bytes": 551
+        },
+        "source_sha256.json": {
+          "sha256": "4562a826ccc0aff838b264c48977c393bc414532b22439da0d4c0c7c2a73c6b4",
+          "bytes": 1840
+        },
+        "target/training_complete.json": {
+          "sha256": "c88cf83ee7a6198f22ead0b55a6d90e76508ba59ed704f731ec1209769eadd5f",
+          "bytes": 1112
+        },
+        "target/best_epoch.json": {
+          "sha256": "e05cdf7270d97eb0b69bafaf2e6e64ddb76f9ae6c3d430cbb41d6c48283cd985",
+          "bytes": 156
+        },
+        "reference/training_complete.json": {
+          "sha256": "d763d115e1387928e96f62d8510f127aa15ab50294e9d99a76e8c2d34a58c1b2",
+          "bytes": 1208
+        },
+        "reference/best_epoch.json": {
+          "sha256": "479b2355a556420086e9a806392c2b147a4af83e6aa7daec69e802b4a3f77176",
+          "bytes": 154
+        },
+        "self_prompt/self_prompt_complete.json": {
+          "sha256": "81fafe7a2ea2c6bca4ae1f4995dd462a0dcec592e5c2da492aecb8ae2715b710",
+          "bytes": 704
+        }
+      }
+    },
+    "ia": {
+      "run_directory_name": "ia_nfcorpus_local_full_repair_v4",
+      "files": {
+        "complete.json": {
+          "sha256": "b145b8e302ad3a2d740b749e711f480f79d240dadc3939bc96ddcb97112e9c09",
+          "bytes": 4135
+        },
+        "config.json": {
+          "sha256": "c8dd0eb1cc66a73da7404df552e9f21ef840b82d3e8fc2ba6a8a9d1e93e48222",
+          "bytes": 1204
+        },
+        "environment.json": {
+          "sha256": "23d67a49b12f4f6214601e346249d02b8ecd1b8037c51cd4574cd850ef2cea19",
+          "bytes": 572
+        },
+        "source_sha256.json": {
+          "sha256": "72851607abbbb58a7f37ec5fec68d20f89cd687a823a9fab458837d4ccfeee4e",
+          "bytes": 2107
+        }
+      }
+    },
+    "dcmi": {
+      "run_directory_name": "dcmi_trec_covid_local_full_repair_v2",
+      "files": {
+        "complete.json": {
+          "sha256": "88e74c8a0f21b32169cb8e064cc4e8c385d7bde9053f6d29f3a178d42ae4ae27",
+          "bytes": 95195
+        },
+        "config.json": {
+          "sha256": "045161b9b7990a928d770ab093c1a31c9107271a89f84edb1fc70413b531a03a",
+          "bytes": 2522
+        },
+        "environment.json": {
+          "sha256": "ec8f818c4da6c4f73caf2f88b74e24499b2c6bd667f11e34a4e2ad95cd141c98",
+          "bytes": 572
+        },
+        "source_sha256.json": {
+          "sha256": "f56fa17747d8c2293352a7b390681c5832d0e75871fb0ca9a516a78236d940c9",
+          "bytes": 2022
+        },
+        "selected_calibration.json": {
+          "sha256": "cdfc809a606a854b19b4959d80ed59a5c4e59d8ab75006e52fa607d96bff40a9",
+          "bytes": 116
+        }
+      }
+    }
+  }
+}

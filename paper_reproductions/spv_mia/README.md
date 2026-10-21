@@ -1,10 +1,14 @@
 # SPV-MIA
 
+**2026-10-22 当前结果：** 已完成 target/self-prompt/reference/校准链；AUC 0.865746，测试准确率 81.20%。扰动版本、参考数据来源和 checkpoint 选择仍需核对。
+
+本轮使用 `reproductions/` 新管线，详见[结果与实跑配置](../../reproductions/results/2026-10-21/README.md)。下文保留历史适配入口的核查，不代表新管线仍缺少同样的阶段，也不表示严格完整论文复现已获验证。
+
 论文：[Practical Membership Inference Attacks against Fine-tuned Large Language Models via Self-prompt Calibration](https://arxiv.org/abs/2311.06062)。
 原作者：[tsinghua-fib-lab/NeurIPS2024_SPV-MIA](https://github.com/tsinghua-fib-lab/NeurIPS2024_SPV-MIA)，
 固定版本 `ee9ebaad837c3798ad9f2c920b01868d9e62478d`。
 
-## 当前自己的代码
+## 历史适配代码入口
 
 `external/SPV_MIA/run_spv_minimal.py` 比较单个 GPT-2 上原文与人工扰动文本的 loss，
 已有 20/20 的结果。它没有完整 self-prompt reference model 校准链，

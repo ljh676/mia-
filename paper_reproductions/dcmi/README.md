@@ -1,10 +1,14 @@
 # DCMI
 
+**2026-10-22 当前结果：** 已完成本地替代生成器版本；AUC 0.817316，测试准确率 75.72%，3281/4000 篇可评分。719 篇被排除，多数扰动未满足请求预算。
+
+本轮使用 `reproductions/` 新管线，详见[结果与实跑配置](../../reproductions/results/2026-10-21/README.md)。下文保留历史适配入口的核查，不代表新管线仍缺少同样的阶段，也不表示严格完整论文复现已获验证。
+
 论文：[DCMI: A Differential Calibration Membership Inference Attack Against Retrieval-Augmented Generation](https://arxiv.org/abs/2509.06026)。
 原作者：[Xinyu140203/RAG_MIA](https://github.com/Xinyu140203/RAG_MIA)，固定版本
 `ef961a1f23d09c62c5fbf69d798e325fb0362e55`。
 
-## 当前自己的代码
+## 历史适配代码入口
 
 `external/DCMI/MIA.py` 是本地 NFCorpus 词法代理；它用 query/document 的词法信号，
 不是生成式 RAG 的真实输出概率。已有 100/100 的结果只是该代理实验的记录。

@@ -57,6 +57,8 @@ def export(output):
     files["README.md"] = ("# Four-paper MIA code handoff\n\n"
                           "For the new full-stage experimental pipelines, start with [reproductions](reproductions/README.md).\n\n"
                           "Start with [the per-paper status and code guide](paper_reproductions/README.md).\n\n"
+                          "Completed single-setting results, executed configs and limitations are in "
+                          "[the current experiment report](reproductions/results/2026-10-21/README.md).\n\n"
                           "The archive contains the author's code adaptations and pinned original entry references. "
                           "It does not claim that all four paper experiments have been reproduced. "
                           "Data, checkpoints and dependencies must be prepared separately.\n\n"

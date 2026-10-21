@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "audit_date": "2026-10-19",
   "paper_identity_basis": "User-provided desktop mia PDFs; title pages visually checked for the four existing attack entries",
   "folder_inventory": "paper_folder_index.md",
@@ -17,15 +17,29 @@
       "commit": "a53e8fda4f1492f204d968d7afb53ce8287c193c",
       "local_source": "external/RAG_MIA",
       "local_config": "configs/rag_mia.yml",
-      "status": "incomplete_reference_answers",
+      "status": "completed_with_exclusions",
       "evaluation_target": "retrieval_datastore_membership",
       "paper_reproduction_verified": false,
       "missing_or_unverified": [
-        "reference_answers",
-        "configured_Phi3_model",
-        "fresh_scoring_run"
+        "original_GPT4o_GPT4o_mini_generation_models",
+        "original_target_model_match",
+        "22_unscorable_documents",
+        "independent_semantic_question_validation",
+        "all_paper_tables"
       ],
-      "reference_entry": "reference_entries/rag_mia_original.py"
+      "reference_entry": "reference_entries/rag_mia_original.py",
+      "legacy_entry_audit": {
+        "audit_date": "2026-10-19",
+        "status": "incomplete_reference_answers",
+        "missing_or_unverified": [
+          "reference_answers",
+          "configured_Phi3_model",
+          "fresh_scoring_run"
+        ]
+      },
+      "status_scope": "completed_new_pipeline_single_setting_legacy_entry_audit_preserved",
+      "formal_result": "reproductions/results/2026-10-21/ia/complete.json",
+      "executed_config": "reproductions/results/2026-10-21/ia/config.json"
     },
     {
       "method": "neighbour_mia",
@@ -39,15 +53,28 @@
       "commit": "c73e29960206ad65798a67bb853065721a402d2f",
       "local_source": "external/Neighbour_MIA",
       "local_config": "configs/neighbour_mia.yml",
-      "status": "local_algorithm_variant",
+      "status": "completed",
       "evaluation_target": "target_training_membership",
       "paper_reproduction_verified": false,
       "missing_or_unverified": [
-        "original_embedding_dropout_neighbours",
-        "matching_member_split_audit",
-        "controlled_method_comparison"
+        "weak_attack_in_this_setting",
+        "controlled_comparison_against_original_neighbour_generation",
+        "exact_training_and_split_fidelity",
+        "all_paper_tables"
       ],
-      "reference_entry": "reference_entries/neighbour_mia_original.py"
+      "reference_entry": "reference_entries/neighbour_mia_original.py",
+      "legacy_entry_audit": {
+        "audit_date": "2026-10-19",
+        "status": "local_algorithm_variant",
+        "missing_or_unverified": [
+          "original_embedding_dropout_neighbours",
+          "matching_member_split_audit",
+          "controlled_method_comparison"
+        ]
+      },
+      "status_scope": "completed_new_pipeline_single_setting_legacy_entry_audit_preserved",
+      "formal_result": "reproductions/results/2026-10-21/neighbour/complete.json",
+      "executed_config": "reproductions/results/2026-10-21/neighbour/config.json"
     },
     {
       "method": "spv_mia",
@@ -61,16 +88,28 @@
       "commit": "ee9ebaad837c3798ad9f2c920b01868d9e62478d",
       "local_source": "external/SPV_MIA",
       "local_config": "configs/spv_mia.yml",
-      "status": "simplified_single_model_only",
+      "status": "completed",
       "evaluation_target": "target_finetuning_membership",
       "paper_reproduction_verified": false,
       "missing_or_unverified": [
-        "target_checkpoint",
-        "self_prompt_reference_data",
-        "reference_checkpoint",
-        "calibrated_probabilistic_variation"
+        "embedding_variant_and_same_domain_self_prompt_differ_from_default_paper_setting",
+        "checkpoint_selection_fidelity_to_original_protocol",
+        "all_paper_tables"
       ],
-      "reference_entry": "reference_entries/spv_mia_original.py"
+      "reference_entry": "reference_entries/spv_mia_original.py",
+      "legacy_entry_audit": {
+        "audit_date": "2026-10-19",
+        "status": "simplified_single_model_only",
+        "missing_or_unverified": [
+          "target_checkpoint",
+          "self_prompt_reference_data",
+          "reference_checkpoint",
+          "calibrated_probabilistic_variation"
+        ]
+      },
+      "status_scope": "completed_new_pipeline_single_setting_legacy_entry_audit_preserved",
+      "formal_result": "reproductions/results/2026-10-21/spv/complete.json",
+      "executed_config": "reproductions/results/2026-10-21/spv/config.json"
     },
     {
       "method": "dcmi",
@@ -84,15 +123,32 @@
       "commit": "ef961a1f23d09c62c5fbf69d798e325fb0362e55",
       "local_source": "external/DCMI",
       "local_config": "configs/dcmi.yml",
-      "status": "lexical_proxy_only",
+      "status": "completed_with_exclusions",
       "evaluation_target": "retrieval_datastore_membership",
       "paper_reproduction_verified": false,
       "missing_or_unverified": [
-        "actual_datastore_member_labels",
-        "verification_and_perturbed_queries",
-        "real_RAG_output_signals"
+        "original_GPT4o_perturbation_generation",
+        "719_unscorable_documents",
+        "17158_of_19762_perturbation_queries_below_requested_edit_budget",
+        "original_FlashRAG_tokenization_match",
+        "all_paper_tables"
       ],
-      "reference_entry": "reference_entries/dcmi_original.py"
+      "reference_entry": "reference_entries/dcmi_original.py",
+      "legacy_entry_audit": {
+        "audit_date": "2026-10-19",
+        "status": "lexical_proxy_only",
+        "missing_or_unverified": [
+          "actual_datastore_member_labels",
+          "verification_and_perturbed_queries",
+          "real_RAG_output_signals"
+        ]
+      },
+      "status_scope": "completed_new_pipeline_single_setting_legacy_entry_audit_preserved",
+      "formal_result": "reproductions/results/2026-10-21/dcmi/complete.json",
+      "executed_config": "reproductions/results/2026-10-21/dcmi/config.json"
     }
-  ]
+  ],
+  "updated_on": "2026-10-22",
+  "completed_experiment_summary": "reproductions/results/2026-10-21/summary.json",
+  "paper_reproduction_verified": false
 }

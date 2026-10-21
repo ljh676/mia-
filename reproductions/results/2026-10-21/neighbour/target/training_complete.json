@@ -1,0 +1,28 @@
+{
+  "identity": {
+    "base_model": "/root/autodl-tmp/models/gpt2",
+    "data_sha256": "61d79c517841e19236a62bd9a8a6c099f9aa5da93369c49f0b2bb3ca2b0cb47b",
+    "config_sha256": "f5cacad195217ba976ad753c6b56b9fff34f1d2b1051065b6315cdf5f6229cb6",
+    "role": "target"
+  },
+  "status": "completed",
+  "epochs_run": 1,
+  "elapsed_seconds": 1105.428632259369,
+  "checkpoint": {
+    "path": "/root/autodl-tmp/mia_paper_reproduction_20261019/runs/neighbour_agnews_fp32_full/target",
+    "files": {
+      "config.json": "b298d324da9f627bae6cf6139df78997f10fff84bad0fa33b8ea0a814c429f30",
+      "generation_config.json": "f0fbd59fa0ac70a180770d0b883dc916c6266aed67a1f15ddb10dc9fb636a1f7",
+      "model.safetensors": "6a98ca1fe36e3363d0a4a9d28070db368cf26344e3198ee778866b1367b086f0",
+      "tokenizer_config.json": "d0e99e3da75fd15dd9a9747896f860100a13ef7e92cc9689b63d43f18652b24f"
+    }
+  },
+  "best_epoch": {
+    "epoch": 1,
+    "train_loss": 3.3409694340229033,
+    "validation_loss": 3.130392360806465,
+    "validation_perplexity": 22.88295615642174,
+    "steps": 3750
+  },
+  "validation_perplexity_target_met": true
+}

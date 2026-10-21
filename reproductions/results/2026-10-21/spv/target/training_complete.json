@@ -1,0 +1,28 @@
+{
+  "identity": {
+    "base_model": "/root/mia-paper-assets/gpt2-xl",
+    "data_sha256": "77db4cc7274bcb9e1ab74c9a88ab574c68736e3109c4c75b1e45e5e0911eb3d8",
+    "config_sha256": "9ccff61dfc4676673b086579873aa54af0106aab638ae6d4894c6f0a9438ddae",
+    "role": "target"
+  },
+  "status": "completed",
+  "epochs_run": 10,
+  "elapsed_seconds": 48491.54320883751,
+  "checkpoint": {
+    "path": "/root/autodl-tmp/mia_paper_reproduction_20261019/runs/spv_agnews_gpt2xl_full/target",
+    "files": {
+      "config.json": "1d0e5934b049c8e039cfa5eddb590a3e534114eff1226bd6e9d50d9d09ad5ac2",
+      "generation_config.json": "f0fbd59fa0ac70a180770d0b883dc916c6266aed67a1f15ddb10dc9fb636a1f7",
+      "model.safetensors": "2e4265c2e2dcabd725339e4faf528496165c241e8ed9ac361cd58cfd7fb8613d",
+      "tokenizer_config.json": "d0e99e3da75fd15dd9a9747896f860100a13ef7e92cc9689b63d43f18652b24f"
+    }
+  },
+  "best_epoch": {
+    "epoch": 1,
+    "train_loss": 2.8503794444799424,
+    "validation_loss": 2.8808575731217863,
+    "validation_perplexity": 17.82955677393837,
+    "steps": 625
+  },
+  "validation_perplexity_target_met": null
+}

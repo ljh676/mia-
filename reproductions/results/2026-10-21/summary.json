@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "published_on": "2026-10-22",
+  "scope": "one_setting_per_method_not_all_paper_tables",
+  "strict_paper_reproduction_verified": false,
+  "methods": {
+    "neighbour": {
+      "run_directory_name": "neighbour_agnews_fp32_full",
+      "completion_status": "completed",
+      "complete_json": "neighbour/complete.json",
+      "config_json": "neighbour/config.json",
+      "finished_at": 1792426794.6890135,
+      "auc": 0.534293,
+      "accuracy": 0.525,
+      "counts": {
+        "calibration": 400,
+        "test": 2000,
+        "test_members": 1000,
+        "test_nonmembers": 1000
+      },
+      "tpr_at_fpr": {
+        "0.01": 0.01,
+        "0.001": 0.004
+      },
+      "evaluation_scope": "configured_single_setting",
+      "coverage": {
+        "configured": 2400,
+        "scored": 2400,
+        "unscorable": 0
+      },
+      "paper_reproduction_verified": false
+    },
+    "spv": {
+      "run_directory_name": "spv_agnews_gpt2xl_full",
+      "completion_status": "completed",
+      "complete_json": "spv/complete.json",
+      "config_json": "spv/config.json",
+      "finished_at": 1792497800.1285717,
+      "auc": 0.8657460000000001,
+      "accuracy": 0.812,
+      "counts": {
+        "calibration": 400,
+        "test": 2000,
+        "test_members": 1000,
+        "test_nonmembers": 1000
+      },
+      "tpr_at_fpr": {
+        "0.01": 0.249,
+        "0.001": 0.051
+      },
+      "evaluation_scope": "configured_single_setting",
+      "coverage": {
+        "configured": 2400,
+        "scored": 2400,
+        "unscorable": 0
+      },
+      "paper_reproduction_verified": false
+    },
+    "ia": {
+      "run_directory_name": "ia_nfcorpus_local_full_repair_v4",
+      "completion_status": "completed_with_exclusions",
+      "complete_json": "ia/complete.json",
+      "config_json": "ia/config.json",
+      "finished_at": 1792597530.5980237,
+      "auc": 0.9298358581234767,
+      "accuracy": 0.8598083711548159,
+      "counts": {
+        "calibration": 395,
+        "test": 1983,
+        "test_members": 987,
+        "test_nonmembers": 996
+      },
+      "tpr_at_fpr": {
+        "0.01": 0.0,
+        "0.001": 0.0
+      },
+      "evaluation_scope": "conditional_on_scorable_documents_not_full_paper_protocol",
+      "coverage": {
+        "configured": 2400,
+        "scored": 2378,
+        "unscorable": 22,
+        "by_split_and_label": {
+          "calibration_0": {
+            "configured": 200,
+            "scored": 197,
+            "unscorable": 3
+          },
+          "calibration_1": {
+            "configured": 200,
+            "scored": 198,
+            "unscorable": 2
+          },
+          "test_0": {
+            "configured": 1000,
+            "scored": 996,
+            "unscorable": 4
+          },
+          "test_1": {
+            "configured": 1000,
+            "scored": 987,
+            "unscorable": 13
+          }
+        },
+        "scope": "conditional_on_scorable_documents"
+      },
+      "paper_reproduction_verified": false,
+      "protocol_differences": [
+        "User authorized replacing unavailable GPT-4o/GPT-4o-mini with a local Qwen3-1.7B instruction model",
+        "Target generator Flan-T5-large differs from IA paper generators; GTE-small selected explicitly",
+        "Vanilla RAG variant without query rewriting, as studied in paper Appendix D",
+        "200 additional calibration samples per class held out from the 1000-per-class test set",
+        "Local question generation uses small batches with sampled retries; unscorable documents are disclosed with conditional evaluation coverage"
+      ]
+    },
+    "dcmi": {
+      "run_directory_name": "dcmi_trec_covid_local_full_repair_v2",
+      "completion_status": "completed_with_exclusions",
+      "complete_json": "dcmi/complete.json",
+      "config_json": "dcmi/config.json",
+      "finished_at": 1792510717.5312932,
+      "auc": 0.8173164540973599,
+      "accuracy": 0.7572041692213366,
+      "counts": {
+        "calibration": 1650,
+        "test": 1631,
+        "test_members": 814,
+        "test_nonmembers": 817
+      },
+      "tpr_at_fpr": {
+        "0.01": 0.051597051597051594,
+        "0.001": 0.0085995085995086
+      },
+      "evaluation_scope": "conditional_on_scorable_documents_not_full_paper_protocol",
+      "coverage": {
+        "configured": 4000,
+        "scored": 3281,
+        "unscorable": 719,
+        "by_split_and_label": {
+          "calibration_0": {
+            "configured": 1000,
+            "scored": 829,
+            "unscorable": 171
+          },
+          "calibration_1": {
+            "configured": 1000,
+            "scored": 821,
+            "unscorable": 179
+          },
+          "test_0": {
+            "configured": 1000,
+            "scored": 817,
+            "unscorable": 183
+          },
+          "test_1": {
+            "configured": 1000,
+            "scored": 814,
+            "unscorable": 186
+          }
+        },
+        "scope": "conditional_on_scorable_documents"
+      },
+      "paper_reproduction_verified": false,
+      "perturbation_budget_checks": {
+        "queries": 19762,
+        "requested_budget_met": 2604,
+        "unmet_budget_count": 17158,
+        "mean_actual_fraction": 0.02370635632912768
+      },
+      "protocol_differences": [
+        "GPT-4o perturbation generator replaced with user-authorized local Qwen3-1.7B",
+        "Local model proposes sparse antonym edits; actual counts and unmet budgets are retained",
+        "Standard RAG with Flan-T5-large and BM25, both model choices evaluated in paper",
+        "BM25 implemented with explicit sklearn unigram tokenization and Lucene IDF; not FlashRAG tokenizer",
+        "Uses the public BEIR TREC-COVID release; exact document count is recorded rather than assumed",
+        "Decision-reversal and distribution-aware variants use fixed 0.03 perturbation magnitude from released perturb.py",
+        "Local generator selects direct WordNet adjective/adverb antonyms; this lexical constraint differs from original GPT-4o free rewriting",
+        "Unscorable documents receive no score and are disclosed in coverage; any exclusions make evaluation conditional"
+      ]
+    }
+  }
+}

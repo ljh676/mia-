@@ -1,0 +1,7 @@
+{
+  "epoch": 1,
+  "train_loss": 2.8503794444799424,
+  "validation_loss": 2.8808575731217863,
+  "validation_perplexity": 17.82955677393837,
+  "steps": 625
+}
